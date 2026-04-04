@@ -1,0 +1,118 @@
+/* src/App.css */
+
+/* ─── Global ───────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  background: #0d0d0f;
+  color: #f0f0fa;
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+}
+
+:root {
+  --color-bg: #0d0d0f;
+  --color-surface: #14141a;
+  --color-border: #1e1e28;
+  --color-text: #e8e8f0;
+  --color-text-dim: #44444f;
+  --color-accent: #9966ff;
+  --color-danger: #e84040;
+  --font: 'Courier New', 'Monaco', 'Menlo', monospace;
+  --radius: 8px;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── App container ────────────────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  height: 520px;
+  background: var(--color-bg);
+  overflow: hidden;
+  border-radius: 12px;
+  /* Subtle border for when window has no frame */
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+/* Landing page takes full viewport */
+.app[data-view="landing"] {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+
+.app-body {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Views ────────────────────────────────────────────────────────────────── */
+.view-game,
+.view-leaderboard,
+.view-landing {
+  position: absolute;
+  inset: 0;
+  animation: view-enter 0.18s ease-out;
+}
+
+.view-landing {
+  overflow: auto;
+  width: 100vw;
+  height: 100vh;
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.view-leaderboard {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Scrollbar global ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #2a2a35;
+  border-radius: 2px;
+}
+
+/* ─── Selection ────────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(153, 102, 255, 0.3);
+  color: #fff;
+}

@@ -1,0 +1,154 @@
+/* src/components/Leaderboard/Leaderboard.css */
+
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0f;
+  color: #e8e8f0;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ─── Header ───────────────────────────────────────────────────────────────── */
+.lb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #1e1e28;
+}
+
+.lb-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #9966ff;
+  text-transform: uppercase;
+}
+
+.lb-close {
+  background: none;
+  border: none;
+  color: #44444f;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  line-height: 1;
+  -webkit-app-region: no-drag;
+}
+
+.lb-close:hover { color: #e8e8f0; }
+
+/* ─── List ─────────────────────────────────────────────────────────────────── */
+.lb-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.lb-list::-webkit-scrollbar { width: 3px; }
+.lb-list::-webkit-scrollbar-track { background: transparent; }
+.lb-list::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 2px; }
+
+/* ─── Entry ────────────────────────────────────────────────────────────────── */
+.lb-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  transition: background 0.15s;
+}
+
+.lb-entry:hover { background: #141419; }
+
+.lb-entry--highlight {
+  background: rgba(153, 102, 255, 0.08) !important;
+  border-left: 2px solid #9966ff;
+  padding-left: 14px;
+}
+
+.lb-rank {
+  font-size: 12px;
+  min-width: 26px;
+  text-align: center;
+  color: #55556a;
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-entry--highlight .lb-rank { color: #9966ff; }
+
+.lb-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: #c8c8d8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-entry--highlight .lb-name { color: #e8e8f0; }
+
+.lb-date {
+  font-size: 10px;
+  color: #33333f;
+  white-space: nowrap;
+}
+
+.lb-score {
+  font-size: 15px;
+  font-weight: 700;
+  color: #9966ff;
+  min-width: 20px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Empty state ──────────────────────────────────────────────────────────── */
+.lb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  gap: 6px;
+}
+
+.lb-empty-icon { font-size: 28px; margin-bottom: 4px; }
+
+.lb-empty-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #44444f;
+}
+
+.lb-empty-sub {
+  font-size: 11px;
+  color: #2a2a35;
+}
+
+/* ─── Footer ───────────────────────────────────────────────────────────────── */
+.lb-footer {
+  padding: 8px 16px 10px;
+  border-top: 1px solid #1a1a22;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lb-clear-btn {
+  background: none;
+  border: none;
+  font-size: 10px;
+  font-family: inherit;
+  color: #33333f;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  -webkit-app-region: no-drag;
+}
+
+.lb-clear-btn:hover { color: #e84040; }

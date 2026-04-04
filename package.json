@@ -1,0 +1,51 @@
+{
+  "name": "tray-pong",
+  "version": "1.0.0",
+  "description": "A Pong game that lives in your macOS menu bar",
+  "main": "electron/main.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "BROWSER=chrome react-scripts start",
+    "dev": "npm run electron:dev",
+    "build": "react-scripts build",
+    "electron": "electron .",
+    "electron:dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "npm run build && electron-builder --mac",
+    "electron:pack": "npm run build && electron-builder --mac --dir"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "react-scripts": "5.0.1",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.traypong.app",
+    "productName": "TrayPong",
+    "mac": {
+      "category": "public.app-category.games",
+      "target": ["dmg", "zip"]
+    },
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "asar": true
+  },
+  "eslintConfig": {
+    "extends": ["react-app"]
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version"]
+  }
+}

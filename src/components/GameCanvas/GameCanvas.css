@@ -1,0 +1,84 @@
+/* src/components/GameCanvas/GameCanvas.css */
+
+.game-canvas-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0d0d0f;
+}
+
+/* ─── Score Bar ────────────────────────────────────────────────────────────── */
+.score-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  padding: 10px 20px 8px;
+  background: #0d0d0f;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-label {
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #44444f;
+}
+
+.score-value {
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: #e8e8f0;
+  line-height: 1;
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-score .score-value { color: #e84040; }
+.player-score .score-value { color: #e8e8f0; }
+
+.score-divider {
+  font-size: 20px;
+  color: #2a2a35;
+  font-weight: 300;
+  margin-top: -2px;
+}
+
+/* ─── Canvas ───────────────────────────────────────────────────────────────── */
+.game-canvas {
+  display: block;
+  cursor: none;
+  /* Disable drag region for canvas interaction */
+  -webkit-app-region: no-drag;
+}
+
+/* ─── Rally Badge ──────────────────────────────────────────────────────────── */
+.rally-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9966ff;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+  animation: rally-pulse 0.5s ease infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes rally-pulse {
+  from { opacity: 0.6; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1.03); }
+}
