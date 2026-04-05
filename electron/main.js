@@ -35,28 +35,8 @@ function createTray() {
     // Development: use public folder
     iconPath = path.join(__dirname, '../public/img/traypong.png');
   } else {
-    // Production: try multiple possible locations for the tray icon
-    const possiblePaths = [
-      path.join(__dirname, '../build/img/traypong.png'),
-      path.join(__dirname, '../../build/img/traypong.png'),
-      path.join(__dirname, '../../../build/img/traypong.png'),
-      path.join(process.resourcesPath, 'img/traypong.png'),
-      path.join(__dirname, 'img/traypong.png')
-    ];
-    
-    // Find the first path that exists
-    iconPath = possiblePaths.find(p => {
-      try {
-        return require('fs').existsSync(p);
-      } catch (e) {
-        return false;
-      }
-    });
-    
-    // If none found, use the first one as fallback
-    if (!iconPath) {
-      iconPath = possiblePaths[0];
-    }
+    // Production: use resources path (this is where extraResources puts files)
+    iconPath = path.join(process.resourcesPath, 'img/traypong.png');
   }
   
   console.log('Loading tray icon from:', iconPath);
@@ -72,13 +52,43 @@ function createTray() {
       trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 128, height: 128 });
       console.log('Tray icon loaded from file:', iconPath);
     } else {
-      throw new Error('Icon file not found');
+      // If file doesn't exist, try alternative paths
+      const fallbackPaths = [
+        path.join(__dirname, '../build/img/traypong.png'),
+        path.join(__dirname, '../../build/img/traypong.png'),
+        path.join(__dirname, '../../../build/img/traypong.png')
+      ];
+      
+      for (const fallbackPath of fallbackPaths) {
+        console.log('Trying fallback path:', fallbackPath);
+        if (require('fs').existsSync(fallbackPath)) {
+          trayIcon = nativeImage.createFromPath(fallbackPath).resize({ width: 128, height: 128 });
+          console.log('Tray icon loaded from fallback:', fallbackPath);
+          break;
+        }
+      }
+      
+      if (!trayIcon) {
+        throw new Error('Tray icon not found in any location');
+      }
     }
   } catch (error) {
-    console.error('Failed to load tray icon from file:', error);
-    // Fallback: create a simple colored rectangle as tray icon
-    trayIcon = nativeImage.createEmpty();
-    console.log('Using fallback tray icon');
+    console.error('Failed to load tray icon:', error);
+    // Create a simple fallback using the traypong.png from development
+    try {
+      const devIconPath = path.join(__dirname, '../public/img/traypong.png');
+      if (require('fs').existsSync(devIconPath)) {
+        trayIcon = nativeImage.createFromPath(devIconPath).resize({ width: 128, height: 128 });
+        console.log('Using development tray icon as fallback');
+      } else {
+        throw new Error('Development icon not found either');
+      }
+    } catch (devError) {
+      console.error('Failed to load development icon:', devError);
+      // Last resort - create empty icon but continue
+      trayIcon = nativeImage.createEmpty();
+      console.log('Using empty icon - app will continue but tray icon may not be visible');
+    }
   }
 
   try {
@@ -86,6 +96,7 @@ function createTray() {
     console.log('Tray created successfully');
   } catch (error) {
     console.error('Failed to create tray:', error);
+    // Continue without tray - app should still work
     return;
   }
 
