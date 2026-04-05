@@ -7,7 +7,8 @@
   "scripts": {
     "start": "BROWSER=chrome react-scripts start",
     "dev": "npm run electron:dev",
-    "build": "react-scripts build",
+    "build": "react-scripts build && npm run copy-dmg",
+    "copy-dmg": "cp dist/TrayPong-*.dmg build/",
     "electron": "electron .",
     "electron:dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "npm run build && electron-builder --mac",
