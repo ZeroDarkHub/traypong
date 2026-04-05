@@ -538,7 +538,7 @@ export default function TrayPongLanding({ onStartGame }) {
               background: "#9966ff", color: "#fff",
               fontFamily: "'DM Mono', monospace", fontSize: "clamp(12px, 3vw, 13px)", fontWeight: 500,
               letterSpacing: "0.04em", padding: "clamp(12px, 3vw, 14px) clamp(24px, 6vw, 28px)", borderRadius: 6,
-              textDecoration: "none", border: "none", cursor: "none",
+              textDecoration: "none", border: "none",
               transition: "background 0.2s, transform 0.15s",
             }}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -549,7 +549,7 @@ export default function TrayPongLanding({ onStartGame }) {
               background: "transparent", color: "#55556a",
               fontFamily: "'DM Mono', monospace", fontSize: "clamp(11px, 2.8vw, 12px)",
               letterSpacing: "0.04em", padding: "clamp(12px, 3vw, 14px) clamp(16px, 4vw, 20px)", borderRadius: 6,
-              textDecoration: "none", border: "1px solid rgba(255,255,255,0.07)", cursor: "none",
+              textDecoration: "none", border: "1px solid rgba(255,255,255,0.07)",
             }}>
               See features →
             </a>
@@ -748,7 +748,7 @@ export default function TrayPongLanding({ onStartGame }) {
               background: "#f0f0fa", color: "#080810",
               fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700,
               letterSpacing: "0.02em", padding: "18px 40px", borderRadius: 8,
-              textDecoration: "none", cursor: "none",
+              textDecoration: "none", cursor: "pointer",
               transition: "transform 0.15s, box-shadow 0.2s",
               boxShadow: "0 0 60px rgba(240,240,255,0.15)",
             }}>
@@ -794,8 +794,7 @@ function FeatureCard({ icon, title, desc, tag }) {
         padding: "32px 28px",
         border: `1px solid ${hovered ? "rgba(153,102,255,0.35)" : "rgba(255,255,255,0.07)"}`,
         transition: "border-color 0.2s, background 0.2s",
-        position: "relative", overflow: "hidden", cursor: "none",
-        height: "100%",
+        position: "relative", overflow: "hidden", height: "100%",
       }}
     >
       {hovered && (
