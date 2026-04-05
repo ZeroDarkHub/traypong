@@ -37,8 +37,12 @@ export function loadLeaderboard() {
  */
 export function saveScore(name, score, roundsWon) {
   if (score <= 0) return { leaderboard: loadLeaderboard(), rank: null };
-
-  const board = loadLeaderboard();
+  
+  // Filter out entries with undefined names
+  const existingBoard = loadLeaderboard();
+  const filteredBoard = existingBoard.filter(entry => entry.name && entry.name !== 'undefined');
+  
+  const board = filteredBoard;
 
   const entry = {
     name: (name || 'Anonymous').slice(0, 10), // Limit to 10 chars
