@@ -437,8 +437,7 @@ export default function TrayPongLanding({ onStartGame }) {
         zIndex: 100, borderBottom: "1px solid rgba(255,255,255,0.04)",
         flexWrap: "wrap", gap: "16px",
       }}>
-        <a href="#" style={{ fontFamily: "var(--font)", fontSize: "clamp(14px, 3.5vw, 16px)", fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa", textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#9966ff", animation: "pulseDot 2s ease infinite" }} />
+        <a href="#" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(14px, 3.5vw, 16px)", fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa", textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
           TRAYPONG
         </a>
         <div style={{ display: "flex", gap: "clamp(16px, 4vw, 32px)", flexWrap: "wrap" }}>
@@ -447,7 +446,33 @@ export default function TrayPongLanding({ onStartGame }) {
             ["#howto", "How to Play"],
             ["#", "Play Demo"]
           ].map(([href, label]) => (
-            <button key={href} onClick={label === "Play Demo" ? onStartGame : undefined} href={href} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", fontFamily: "var(--font)", background: "none", border: "none", cursor: "pointer" }}>{label}</button>
+            <button 
+              key={href} 
+              onClick={label === "Play Demo" ? onStartGame : undefined} 
+              href={href} 
+              style={{ 
+                fontSize: "clamp(10px, 2.5vw, 11px)", 
+                letterSpacing: "0.1em", 
+                textTransform: "uppercase", 
+                color: "#55556a", 
+                textDecoration: "none", 
+                fontFamily: "var(--font)", 
+                background: "none", 
+                border: "none", 
+                cursor: "pointer",
+                transition: "color 0.2s, background 0.15s"
+              }} 
+              onMouseEnter={(e) => {
+                e.target.style.color = "#9966ff";
+                e.target.style.background = "rgba(153, 102, 255, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = "#55556a";
+                e.target.style.background = "none";
+              }}
+            >
+              {label}
+            </button>
           ))}
         </div>
       </nav>
@@ -761,20 +786,13 @@ export default function TrayPongLanding({ onStartGame }) {
       <footer style={{ 
         borderTop: "1px solid rgba(255,255,255,0.07)", 
         padding: "clamp(24px, 5vw, 32px) clamp(24px, 5vw, 48px)", 
-        display: "flex", alignItems: "center", justifyContent: "space-between",
+        display: "flex", alignItems: "center", justifyContent: "center",
         flexWrap: "wrap", gap: "clamp(16px, 3vw, 20px)"
       }}>
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 13, color: "#f0f0fa" }}>TRAYPONG</span>
-
-        <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: 13, color: "#9966ff" }}>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontStyle: "italic", fontSize: 13, color: "#9966ff" }}>
           © {new Date().getFullYear()} TrayPong · Your menu bar has been too boring for too long
         </span>
-
-        <div style={{ display: "flex", gap: "clamp(16px, 4vw, 24px)", flexWrap: "wrap" }}>
-          {[["#features", "Features"], ["#howto", "Install"], ["TrayPong.dmg", "Download"]].map(([href, label]) => (
-            <a key={label} href={href} style={{ fontSize: 11, color: "#55556a", textDecoration: "none" }}>{label}</a>
-          ))}
-        </div>
       </footer>
     </div>
   );
