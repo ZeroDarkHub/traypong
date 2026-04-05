@@ -6,8 +6,9 @@
   flex-direction: column;
   align-items: center;
   background: #0d0d0f;
-  height: 100%;
   margin: 0 auto;
+  width: 100%;
+  max-width: 300px;
 }
 
 /* ─── Score Bar ────────────────────────────────────────────────────────────── */
@@ -28,7 +29,7 @@
 }
 
 .score-label {
-  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -37,7 +38,7 @@
 }
 
 .score-value {
-  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
   font-size: 28px;
   font-weight: 700;
   color: #e8e8f0;
@@ -57,21 +58,38 @@
   margin-top: -2px;
 }
 
+/* ─── Enhanced score row ───────────────────────────────────────────────────── */
+.enhanced-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 20px 8px;
+  background: #0d0d0f;
+}
+
 /* ─── Canvas ───────────────────────────────────────────────────────────────── */
 .game-canvas {
   display: block;
   cursor: none;
+  /* Scale canvas to fill wrapper width on all screen sizes */
+  width: 100%;
+  height: auto;
+  /* Prevent browser from handling touch gestures on canvas */
+  touch-action: none;
   /* Disable drag region for canvas interaction */
   -webkit-app-region: no-drag;
+  /* Crisp pixel rendering when scaled */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* ─── Rally Badge ──────────────────────────────────────────────────────────── */
 .rally-badge {
   position: absolute;
   bottom: 8px;
-  left: 130px;
-  transform: translateX(-50%);
-  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  right: 12px;
+  font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
   font-size: 10px;
   font-weight: 600;
   color: #9966ff;
@@ -79,7 +97,6 @@
   opacity: 0.9;
   animation: rally-pulse 0.5s ease infinite alternate;
   pointer-events: none;
-  z-index: 10;
 }
 
 @keyframes rally-pulse {
@@ -87,33 +104,19 @@
   to { opacity: 1; transform: scale(1.03); }
 }
 
-/* ─── Enhanced Scoring Display ────────────────────────────────────────── */
-.enhanced-score {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 8px 20px;
-  background: #0d0d0f;
-  border-top: 1px solid rgba(255,255,255,0.07);
-  gap: 20px;
-}
+/* ─── Mobile ───────────────────────────────────────────────────────────────── */
+@media (max-width: 400px) {
+  .game-canvas-wrapper {
+    max-width: 100%;
+  }
 
-.combo-display,
-.multiplier-display,
-.total-score-display {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+  .score-value {
+    font-size: 22px;
+  }
 
-.total-score-display {
-  flex: 2;
-  justify-content: flex-start;
-}
-
-.combo-display,
-.multiplier-display {
-  flex: 1;
-  justify-content: center;
+  .rally-badge {
+    font-size: 9px;
+    bottom: 4px;
+    right: 8px;
+  }
 }

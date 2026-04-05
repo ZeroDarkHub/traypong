@@ -69,11 +69,11 @@ const STEPS = [
   },
 ];
 
-const STATS = [
-  { num: "60", unit: "fps", label: "Buttery smooth" },
-  { num: "0", unit: "ms", label: "Input lag felt" },
-  { num: "~3", unit: "mb", label: "App size" },
-];
+// const STATS = [
+//   { num: "60", unit: "fps", label: "Buttery smooth" },
+//   { num: "0", unit: "ms", label: "Input lag felt" },
+//   { num: "~3", unit: "mb", label: "App size" },
+// ];
 
 function useReveal() {
   const ref = useRef(null);
@@ -445,9 +445,9 @@ export default function TrayPongLanding({ onStartGame }) {
           {[
             ["#features", "Features"],
             ["#howto", "How to Play"],
-            ["download", "Play Demo"]
+            ["#", "Play Demo"]
           ].map(([href, label]) => (
-            <a key={href} href={href} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", fontFamily: "var(--font)" }}>{label}</a>
+            <button key={href} onClick={label === "Play Demo" ? onStartGame : undefined} href={href} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", fontFamily: "var(--font)", background: "none", border: "none", cursor: "pointer" }}>{label}</button>
           ))}
         </div>
       </nav>
@@ -530,7 +530,7 @@ export default function TrayPongLanding({ onStartGame }) {
             flexDirection: "row", flexWrap: "wrap",
             animation: "fadeUp 0.8s 0.3s ease both" 
           }}>
-            <button onClick={onStartGame} style={{
+            <a href="/TrayPong.dmg" download style={{
               display: "inline-flex", alignItems: "center", gap: 10,
               background: "#9966ff", color: "#fff",
               fontFamily: "'DM Mono', monospace", fontSize: "clamp(12px, 3vw, 13px)", fontWeight: 500,
@@ -539,29 +539,29 @@ export default function TrayPongLanding({ onStartGame }) {
               transition: "background 0.2s, transform 0.15s",
             }}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Play Now
-            </button>
-            <a href="#features" style={{
+              Download Now
+            </a>
+            <button onClick={onStartGame} style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               background: "transparent", color: "#55556a",
               fontFamily: "'DM Mono', monospace", fontSize: "clamp(11px, 2.8vw, 12px)",
               letterSpacing: "0.04em", padding: "clamp(12px, 3vw, 14px) clamp(16px, 4vw, 20px)", borderRadius: 6,
               textDecoration: "none", border: "1px solid rgba(255,255,255,0.07)",
             }}>
-              See features →
-            </a>
+              Play Demo →
+            </button>
           </div>
         </div>
       </section>
 
       {/* ── App Mockup ── */}
-      <section style={{ padding: "20px 24px 100px", display: "flex", justifyContent: "center" }}>
+      <section style={{ padding: "20px 24px 100px", display: "flex", justifyContent: "center", width: "100%" }}>
         <Reveal>
           <AppMockup />
         </Reveal>
       </section>
 
-      {/* ── Stats ── */}
+      {/* ── Stats ──
       <Reveal>
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -589,7 +589,7 @@ export default function TrayPongLanding({ onStartGame }) {
             </div>
           ))}
         </div>
-      </Reveal>
+      </Reveal> */}
 
       {/* ── Features ── */}
       <section id="features" style={{ 

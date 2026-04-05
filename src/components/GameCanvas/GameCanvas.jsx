@@ -179,7 +179,8 @@ export default function GameCanvas({ onGameOver }) {
 
     // ── Overlays ────────────────────────────────────────────────────────────
     if (gameState === GAME_STATE.IDLE) {
-      drawOverlay(ctx, 'TRAY PONG', 'Click to play');
+      const isTouchDevice = 'ontouchstart' in window;
+      drawOverlay(ctx, 'TRAY PONG', isTouchDevice ? 'Tap to play' : 'Click to play');
     } else if (gameState === GAME_STATE.PAUSED) {
       drawOverlay(ctx, 'PAUSED', 'Click to resume');
     } else if (gameState === GAME_STATE.SCORED) {
@@ -214,6 +215,39 @@ export default function GameCanvas({ onGameOver }) {
     const rect = canvas.getBoundingClientRect();
     updateMouseX(e.clientX - rect.left);
   }, [updateMouseX]);
+
+  // ─── Touch tracking ────────────────────────────────────────────────────────
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    // Scale touch position to canvas coordinate space
+    const scaleX = CANVAS_W / rect.width;
+    updateMouseX((touch.clientX - rect.left) * scaleX);
+  }, [updateMouseX]);
+
+  const handleTouchStart = useCallback((e) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const scaleX = CANVAS_W / rect.width;
+    updateMouseX((touch.clientX - rect.left) * scaleX);
+
+    // Also trigger game start on tap
+    const { gameState, isEnteringName } = renderState;
+    if (isEnteringName) return;
+    if (
+      gameState === GAME_STATE.IDLE ||
+      gameState === GAME_STATE.GAME_OVER ||
+      gameState === GAME_STATE.PAUSED
+    ) {
+      startGame();
+    }
+  }, [updateMouseX, renderState, startGame]);
 
   // ─── Mouse enter/leave for pause/resume ───────────────────────────────────────
   const handleMouseEnter = useCallback(() => {
@@ -306,6 +340,8 @@ export default function GameCanvas({ onGameOver }) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         className="game-canvas"
       />
 
