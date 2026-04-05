@@ -132,7 +132,7 @@ function drawOverlay(ctx, text, subtext) {
 
 export default function GameCanvas({ onGameOver }) {
   const canvasRef = useRef(null);
-  const { renderState, startGame, updateMouseX } = useGameLoop(canvasRef);
+  const { renderState, startGame, updateMouseX, handleKeyDown, handleKeyUp, pauseGame, resumeGame } = useGameLoop(canvasRef);
 
   // ─── Draw to canvas whenever renderState changes ─────────────────────────
   useEffect(() => {
@@ -201,6 +201,26 @@ export default function GameCanvas({ onGameOver }) {
     updateMouseX(e.clientX - rect.left);
   }, [updateMouseX]);
 
+  // ─── Mouse enter/leave for pause/resume ───────────────────────────────────────
+  const handleMouseEnter = useCallback(() => {
+    resumeGame();
+  }, [resumeGame]);
+
+  const handleMouseLeave = useCallback(() => {
+    pauseGame();
+  }, [pauseGame]);
+
+  // ─── Keyboard event listeners ───────────────────────────────────────────────
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleKeyDown, handleKeyUp]);
+
   // ─── Click to start / restart ──────────────────────────────────────────────
   const handleClick = useCallback(() => {
     const { gameState } = renderState;
@@ -247,6 +267,8 @@ export default function GameCanvas({ onGameOver }) {
         width={CANVAS_W}
         height={CANVAS_H}
         onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         className="game-canvas"
       />

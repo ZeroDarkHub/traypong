@@ -33,8 +33,8 @@ function makeInitialState() {
     gameState: GAME_STATE.IDLE,
     playerScore: 0,
     aiScore: 0,
-    playerX: CANVAS_W / 2 - PADDLE_W / 2,
-    aiX: CANVAS_W / 2 - PADDLE_W / 2,
+    playerX: CANVAS_W / 2 - PADDLE_W / 2, // Center position
+    aiX: CANVAS_W / 2 - PADDLE_W / 2,     // Center position
     ball: createBall(),
     shake: 0,        // remaining frames of screen shake
     rallyCount: 0,   // consecutive paddle hits this rally
@@ -49,9 +49,10 @@ export function useGameLoop(canvasRef) {
   const [renderState, setRenderState] = useState(stateRef.current);
   const rafRef = useRef(null);
   const lastTimeRef = useRef(null);
-  const mouseXRef = useRef(CANVAS_W / 2);
+  const mouseXRef = useRef(CANVAS_W / 2); // Start centered
   const scorePauseRef = useRef(null);
   const pausedRef = useRef(false);
+  const keysRef = useRef({ left: false, right: false });
 
   // ─── Render sync ────────────────────────────────────────────────────────────
   const syncRender = useCallback(() => {
@@ -85,8 +86,23 @@ export function useGameLoop(canvasRef) {
       return;
     }
 
-    // ── Player paddle follows mouse (smooth lerp) ──────────────────────────
-    const targetPlayerX = clamp(mouseXRef.current - PADDLE_W / 2, 0, CANVAS_W - PADDLE_W);
+    // ── Player paddle follows mouse or keyboard ────────────────────────────────
+    let targetPlayerX;
+    
+    if (keysRef.current.left || keysRef.current.right) {
+      // Keyboard control - calculate target position
+      const keyboardSpeed = 8; // pixels per frame
+      if (keysRef.current.left) {
+        targetPlayerX = Math.max(0, playerX - keyboardSpeed);
+      } else {
+        targetPlayerX = Math.min(CANVAS_W - PADDLE_W, playerX + keyboardSpeed);
+      }
+    } else {
+      // Mouse control
+      targetPlayerX = clamp(mouseXRef.current - PADDLE_W / 2, 0, CANVAS_W - PADDLE_W);
+    }
+    
+    // Apply smooth lerp movement for both keyboard and mouse
     playerX = lerp(playerX, targetPlayerX, 0.25);
 
     // ── AI movement ────────────────────────────────────────────────────────
@@ -261,6 +277,40 @@ export function useGameLoop(canvasRef) {
     mouseXRef.current = x;
   }, []);
 
+  // ─── Keyboard controls ───────────────────────────────────────────────────────
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'ArrowLeft') {
+      keysRef.current.left = true;
+      keysRef.current.right = false; // Cancel opposite direction
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      keysRef.current.right = true;
+      keysRef.current.left = false; // Cancel opposite direction
+      e.preventDefault();
+    } else if (e.key === ' ') {
+      // Space bar to start/restart game
+      const { gameState } = stateRef.current;
+      if (
+        gameState === GAME_STATE.IDLE ||
+        gameState === GAME_STATE.GAME_OVER ||
+        gameState === GAME_STATE.PAUSED
+      ) {
+        startGame();
+      }
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleKeyUp = useCallback((e) => {
+    if (e.key === 'ArrowLeft') {
+      keysRef.current.left = false;
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      keysRef.current.right = false;
+      e.preventDefault();
+    }
+  }, []);
+
   // ─── Window visibility integration ───────────────────────────────────────────
   useEffect(() => {
     const isElectron = window.electronAPI?.isElectron;
@@ -297,5 +347,7 @@ export function useGameLoop(canvasRef) {
     pauseGame,
     resumeGame,
     updateMouseX,
+    handleKeyDown,
+    handleKeyUp,
   };
 }

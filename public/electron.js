@@ -75,19 +75,17 @@ function createWindow() {
 
   mainWindow.loadURL(RENDERER_URL);
 
-  // Pause game when focus is lost, but don't hide window
+  // Hide when focus is lost (with longer delay to allow click events)
   mainWindow.on('blur', () => {
     if (mainWindow && mainWindow.isVisible()) {
-      // Notify renderer to pause game only
-      mainWindow.webContents.send('window-hidden');
-    }
-  });
-
-  // Resume game when focus is regained
-  mainWindow.on('focus', () => {
-    if (mainWindow && mainWindow.isVisible()) {
-      // Notify renderer to resume game
-      mainWindow.webContents.send('window-shown');
+      // Longer delay to allow click events to be processed
+      setTimeout(() => {
+        if (mainWindow && mainWindow.isVisible() && !mainWindow.isFocused()) {
+          mainWindow.hide();
+          // Notify renderer to pause game
+          mainWindow.webContents.send('window-hidden');
+        }
+      }, 300);
     }
   });
 
@@ -95,10 +93,10 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // DevTools disabled for production
-  // if (isDev) {
-  //   mainWindow.webContents.openDevTools({ mode: 'detach' });
-  // }
+  if (isDev) {
+    // Open DevTools in dev mode for debugging
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
+  }
 }
 
 // ─── Toggle window visibility near the tray icon ─────────────────────────────
