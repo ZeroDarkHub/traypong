@@ -42,33 +42,30 @@ const FEATURES = [
 const STEPS = [
   {
     num: "1",
-    title: "Download & unzip",
-    desc: "Download the zip below, unzip it, and open a terminal in the folder.",
-    code: null,
+    title: "Download the .dmg",
+    desc: "Click the download button and save TrayPong.dmg to your Mac.",
+    warn: null,
   },
   {
     num: "2",
-    title: "Install dependencies",
-    desc: "Requires Node.js ≥ 18. Run once to install everything needed.",
-    code: { cmd: "npm", sub: "install" },
+    title: "Open and drag to Applications",
+    desc: "Double-click the .dmg, then drag TrayPong into your Applications folder.",
+    warn: null,
   },
   {
-    num: "3a",
-    title: "Play in your browser",
-    desc: "Fastest way to jump in — opens at localhost:3000 with full gameplay.",
-    code: { cmd: "npm", sub: "start" },
-  },
-  {
-    num: "3b",
-    title: "Run as a real tray app",
-    desc: "Launches React + Electron together. The 🏓 icon appears in your macOS menu bar.",
-    code: { cmd: "npm run", sub: "electron:dev" },
+    num: "3",
+    title: "First launch — bypass Gatekeeper",
+    desc: "Because TrayPong isn't signed by Apple, macOS will block it on first open. Right-click the app in Applications and choose Open, then confirm. You'll only see this once.",
+    warn: {
+      label: "If right-click doesn't work",
+      detail: "Go to System Settings → Privacy & Security → scroll down and click Open Anyway next to TrayPong.",
+    },
   },
   {
     num: "4",
-    title: "Build a .app for macOS",
-    desc: "Package it into a distributable macOS app bundle. Output lands in /dist.",
-    code: { cmd: "npm run", sub: "electron:build" },
+    title: "Find it in your menu bar",
+    desc: "That's it. A 🏓 icon appears in your macOS menu bar. Click it anytime to play.",
+    warn: null,
   },
 ];
 
@@ -76,7 +73,6 @@ const STATS = [
   { num: "60", unit: "fps", label: "Buttery smooth" },
   { num: "0", unit: "ms", label: "Input lag felt" },
   { num: "~3", unit: "mb", label: "App size" },
-  { num: "∞", unit: "", label: "One more game" },
 ];
 
 function useReveal() {
@@ -112,221 +108,303 @@ function Reveal({ children, delay = 0, style = {} }) {
   );
 }
 
-function AppMockup({ showLeaderboard, setShowLeaderboard, highScores }) {
+// ── Exact constants from the real game (physics.js) ───────────────────────────
+const CW = 300, CH = 380;
+const PW = 56, PH = 8, BR = 5;
+const PY_PLAYER = CH - 24;   // 356
+const PY_AI = 16;
+
+// ── Exact drawing functions copied from GameCanvas.jsx ────────────────────────
+function drawRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawPaddle(ctx, x, y, isPlayer) {
+  const glow = isPlayer ? "rgba(232,232,255,0.35)" : "rgba(232,64,64,0.35)";
+  const color = isPlayer ? "#e8e8f0" : "#e84040";
+  ctx.save();
+  ctx.shadowColor = glow;
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = color;
+  drawRoundRect(ctx, x, y, PW, PH, PH / 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = color;
+  drawRoundRect(ctx, x, y, PW, PH, PH / 2);
+  ctx.fill();
+}
+
+function drawBall(ctx, ball) {
+  const { trail, x, y } = ball;
+  for (let i = 0; i < trail.length; i++) {
+    const alpha = (i / trail.length) * 0.5;
+    const r = BR * 0.5 + (i / trail.length) * BR * 0.5;
+    ctx.beginPath();
+    ctx.arc(trail[i].x, trail[i].y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,170,255,${alpha})`;
+    ctx.fill();
+  }
+  ctx.save();
+  ctx.shadowColor = "rgba(153,102,255,0.4)";
+  ctx.shadowBlur = 16;
+  ctx.beginPath();
+  ctx.arc(x, y, BR, 0, Math.PI * 2);
+  ctx.fillStyle = "#f0f0ff";
+  ctx.fill();
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(x, y, BR, 0, Math.PI * 2);
+  ctx.fillStyle = "#f0f0ff";
+  ctx.fill();
+}
+
+function drawNet(ctx) {
+  ctx.strokeStyle = "#2a2a35";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([8, 5]);
+  ctx.beginPath();
+  ctx.moveTo(CW / 2, 0);
+  ctx.lineTo(CW / 2, CH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawOverlay(ctx, text, subtext) {
+  ctx.fillStyle = "rgba(13,13,15,0.78)";
+  ctx.fillRect(0, 0, CW, CH);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#e8e8f0";
+  ctx.font = 'bold 16px "SF Pro Display","Helvetica Neue",sans-serif';
+  ctx.fillText(text, CW / 2, CH / 2 - 12);
+  if (subtext) {
+    ctx.fillStyle = "#555560";
+    ctx.font = '12px "SF Pro Display","Helvetica Neue",sans-serif';
+    ctx.fillText(subtext, CW / 2, CH / 2 + 14);
+  }
+}
+
+function drawFrame(ctx, state) {
+  // Background gradient — exact match
+  const grad = ctx.createLinearGradient(0, 0, 0, CH);
+  grad.addColorStop(0, "#14141a");
+  grad.addColorStop(1, "#0d0d0f");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CW, CH);
+
+  drawNet(ctx);
+  drawPaddle(ctx, state.playerX, PY_PLAYER, true);
+  drawPaddle(ctx, state.aiX, PY_AI, false);
+  drawBall(ctx, state.ball);
+}
+
+// ── Scripted demo simulation ──────────────────────────────────────────────────
+// Pre-computed waypoints the ball travels through — looks like a real rally
+const DEMO_WAYPOINTS = [
+  { x: 150, y: 340, vx: 3.2,  vy: -4.5 },
+  { x: 240, y: 30,  vx: -3.8, vy: 4.2  },
+  { x: 60,  y: 340, vx: 4.1,  vy: -4.8 },
+  { x: 200, y: 25,  vx: -2.9, vy: 4.6  },
+  { x: 110, y: 345, vx: 3.5,  vy: -4.3 },
+  { x: 260, y: 28,  vx: -4.0, vy: 4.5  },
+];
+
+function makeDemoState() {
+  return {
+    playerX: CW / 2 - PW / 2,
+    aiX: CW / 2 - PW / 2,
+    aiScore: 3,
+    playerScore: 5,
+    ball: { x: 150, y: 190, vx: 3.2, vy: -4.5, trail: [] },
+    waypointIdx: 0,
+  };
+}
+
+function stepDemo(state, dt) {
+  const MAX_TRAIL = 8;
+  let { ball, playerX, aiX, waypointIdx } = state;
+
+  // Update trail
+  const trail = [...ball.trail, { x: ball.x, y: ball.y }];
+  if (trail.length > MAX_TRAIL) trail.shift();
+
+  let { x, y, vx, vy } = ball;
+  x += vx * dt;
+  y += vy * dt;
+
+  // Wall bounce
+  if (x - BR <= 0)  { x = BR;      vx = Math.abs(vx); }
+  if (x + BR >= CW) { x = CW - BR; vx = -Math.abs(vx); }
+
+  // Paddle hit — player (bottom)
+  if (vy > 0 && y + BR >= PY_PLAYER && y + BR <= PY_PLAYER + PH &&
+      x > playerX && x < playerX + PW) {
+    vy = -Math.abs(vy) * 1.04;
+    y = PY_PLAYER - BR;
+  }
+
+  // Paddle hit — AI (top)
+  if (vy < 0 && y - BR <= PY_AI + PH && y - BR >= PY_AI &&
+      x > aiX && x < aiX + PW) {
+    vy = Math.abs(vy) * 1.04;
+    y = PY_AI + PH + BR;
+  }
+
+  // Reset ball if it goes out instead of scoring (keeps the demo looping)
+  if (y > CH + 20 || y < -20) {
+    waypointIdx = (waypointIdx + 1) % DEMO_WAYPOINTS.length;
+    const wp = DEMO_WAYPOINTS[waypointIdx];
+    x = wp.x; y = wp.y; vx = wp.vx; vy = wp.vy;
+  }
+
+  // AI tracks ball smoothly
+  const aiTarget = x - PW / 2;
+  const aiSpeed = 3.2;
+  const aiDiff = aiTarget - aiX;
+  const aiMove = Math.sign(aiDiff) * Math.min(Math.abs(aiDiff) * 0.09, aiSpeed * dt);
+  aiX = Math.max(0, Math.min(CW - PW, aiX + aiMove));
+
+  // Player paddle smoothly follows ball with slight lag (demo illusion)
+  const plTarget = x - PW / 2;
+  const plDiff = plTarget - playerX;
+  const plMove = Math.sign(plDiff) * Math.min(Math.abs(plDiff) * 0.07, 3.8 * dt);
+  playerX = Math.max(0, Math.min(CW - PW, playerX + plMove));
+
+  return {
+    ...state,
+    ball: { x, y, vx, vy, trail },
+    playerX,
+    aiX,
+    waypointIdx,
+  };
+}
+
+function AppMockup() {
+  const canvasRef = useRef(null);
+  const stateRef = useRef(makeDemoState());
+  const rafRef = useRef(null);
+  const lastRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    function tick(ts) {
+      if (lastRef.current === null) lastRef.current = ts;
+      const dt = Math.min((ts - lastRef.current) / 16.67, 2);
+      lastRef.current = ts;
+
+      stateRef.current = stepDemo(stateRef.current, dt);
+      drawFrame(ctx, stateRef.current);
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
   return (
     <div style={{ position: "relative", display: "inline-flex", flexDirection: "column" }}>
-      {/* Glow ring */}
+      {/* Ambient glow behind the whole mockup */}
       <div style={{
         position: "absolute", inset: -60,
         background: "radial-gradient(ellipse at center, rgba(153,102,255,0.07) 0%, transparent 65%)",
         borderRadius: "50%", pointerEvents: "none",
       }} />
 
-      {/* Menu bar strip */}
+      {/* macOS menu bar strip */}
       <div style={{
         background: "rgba(30,30,40,0.95)",
         border: "1px solid rgba(255,255,255,0.1)",
         borderRadius: "12px 12px 0 0",
         padding: "8px 16px",
         display: "flex", alignItems: "center", justifyContent: "flex-end",
-        gap: 12, width: 340,
+        gap: 12, width: CW + 40,
       }}>
         {["Tue 9:41", "WiFi", "🔋"].map(item => (
-          <span key={item} style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "DM Mono, monospace" }}>{item}</span>
+          <span key={item} style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Mono', monospace" }}>{item}</span>
         ))}
-        <span style={{ fontSize: 11, color: "#9966ff", fontWeight: 500, fontFamily: "DM Mono, monospace" }}>🏓</span>
+        <span style={{ fontSize: 11, color: "#9966ff", fontWeight: 500, fontFamily: "'DM Mono', monospace" }}>🏓</span>
       </div>
 
-      {/* App window */}
+      {/* App window chrome */}
       <div style={{
-        width: 340, background: "#0d0d0f",
+        width: CW + 40, background: "#0d0d0f",
         border: "1px solid rgba(153,102,255,0.25)", borderTop: "none",
         borderRadius: "0 0 16px 16px", overflow: "hidden",
         boxShadow: "0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(153,102,255,0.1)",
       }}>
-        {/* Top bar */}
+        {/* UIOverlay top bar — exact match */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 14px 8px", borderBottom: "1px solid #1a1a22",
+          padding: "8px 12px 6px", borderBottom: "1px solid #1a1a22",
+          background: "#0d0d0f",
         }}>
-          <span style={{ fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#9966ff", fontFamily: "var(--font)" }}>TRAY PONG</span>
-          <div style={{ display: "flex", gap: 8, position: "relative" }}>
-            <span style={{ fontSize: 12, color: "#33333f" }}>🔈</span>
-            <button
-              onClick={() => setShowLeaderboard(!showLeaderboard)}
-              style={{
-                fontSize: 12, color: "#33333f", background: "none", border: "none",
-                cursor: "pointer", padding: 0, borderRadius: 2,
-                transition: "color 0.2s ease"
-              }}
-              onMouseEnter={(e) => e.target.style.color = "#9966ff"}
-              onMouseLeave={(e) => e.target.style.color = "#33333f"}
-            >
-              🏆
-            </button>
-            <span style={{ fontSize: 12, color: "#33333f" }}>✕</span>
-            
-            {/* Leaderboard Dropdown */}
-            {showLeaderboard && (
-              <div style={{
-                position: "absolute", top: "100%", right: 0, marginTop: "4px",
-                background: "#0d0d0f", border: "1px solid #1a1a22", borderRadius: "6px",
-                padding: "8px", minWidth: "200px", zIndex: 1000,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
-              }}>
-                <div style={{
-                  color: "#9966ff", fontSize: "10px", fontWeight: "bold",
-                  marginBottom: "6px", textAlign: "center", letterSpacing: "0.1em"
-                }}>
-                  🏆 TOP 10 HIGH SCORES ({highScores.length} found)
-                </div>
-                <div style={{ color: "#666", fontSize: "8px", marginBottom: "4px", textAlign: "center" }}>
-                  {highScores.length > 0 ? `Sample: ${highScores[0].playerName || 'No name'} - ${highScores[0].score || 'No score'}` : 'No data'}
-                </div>
-                {highScores.length > 0 ? (
-                  highScores.slice(0, 10).map((score, index) => (
-                    <div key={index} style={{
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "3px 0", fontSize: "9px",
-                      color: index === 0 ? "#c299ff" : "#f0f0fa",
-                      fontWeight: index < 3 ? "bold" : "normal"
-                    }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span style={{ opacity: 0.6, minWidth: "12px" }}>
-                          {index + 1}.
-                        </span>
-                        <span>{score.playerName}</span>
-                      </span>
-                      <span>{score.score}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ color: "#666", fontSize: "9px", textAlign: "center", padding: "8px 0" }}>
-                    No high scores yet
-                  </div>
-                )}
-              </div>
-            )}
+          <span style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9966ff", fontFamily: "'DM Mono', monospace" }}>TRAY PONG</span>
+          <div style={{ display: "flex", gap: 4 }}>
+            <span style={{ fontSize: 13, color: "#44444f" }}>🔈</span>
+            <span style={{ fontSize: 13, color: "#44444f" }}>🏆</span>
+            <span style={{ fontSize: 13, color: "#44444f" }}>✕</span>
           </div>
         </div>
 
-        {/* Scores */}
+        {/* Score bar — exact match to GameCanvas.css */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "center",
-          gap: 20, padding: "10px 20px 8px", background: "#0d0d0f",
+          gap: 16, padding: "10px 20px 8px", background: "#0d0d0f",
         }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ fontSize: 9, letterSpacing: "0.1em", color: "#44444f", fontFamily: "DM Mono, monospace" }}>AI</span>
-            <span style={{ fontFamily: "Syne, sans-serif", fontSize: 32, fontWeight: 800, lineHeight: 1, color: "#e84040" }}>3</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#44444f" }}>AI</span>
+            <span style={{ fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif", fontSize: 28, fontWeight: 700, color: "#e84040", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>3</span>
           </div>
-          <span style={{ fontSize: 16, color: "#2a2a35" }}>:</span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ fontFamily: "Syne, sans-serif", fontSize: 32, fontWeight: 800, lineHeight: 1, color: "#f0f0fa" }}>5</span>
-            <span style={{ fontSize: 9, letterSpacing: "0.1em", color: "#44444f", fontFamily: "DM Mono, monospace" }}>YOU</span>
+          <span style={{ fontSize: 20, color: "#2a2a35", fontWeight: 300, marginTop: -2 }}>:</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif", fontSize: 28, fontWeight: 700, color: "#e8e8f0", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>5</span>
+            <span style={{ fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#44444f" }}>YOU</span>
           </div>
         </div>
 
-        {/* Canvas */}
-        <div style={{ position: "relative", width: 340, height: 240, background: "linear-gradient(180deg, #14141a 0%, #0d0d0f 100%)", overflow: "hidden" }}>
-          {/* Net */}
-          <div style={{
-            position: "absolute", left: "50%", top: 0, bottom: 0, width: 1,
-            background: "repeating-linear-gradient(to bottom, #2a2a35 0, #2a2a35 6px, transparent 6px, transparent 12px)",
-          }} />
-          {/* AI paddle */}
-          <div style={{
-            position: "absolute", top: 14, left: 100, width: 80, height: 7,
-            borderRadius: 3.5, background: "#e84040",
-            boxShadow: "0 0 12px rgba(232,64,64,0.5)",
-            animation: "mockAi 3s ease-in-out infinite",
-          }} />
-          {/* Player paddle */}
-          <div style={{
-            position: "absolute", bottom: 14, left: 130, width: 80, height: 7,
-            borderRadius: 3.5, background: "#f0f0fa",
-            boxShadow: "0 0 12px rgba(240,240,255,0.3)",
-            animation: "mockPlayer 3s ease-in-out infinite 0.3s",
-          }} />
-          {/* Trail dots */}
-          {[0, -0.15, -0.3].map((delay, i) => (
-            <div key={i} style={{
-              position: "absolute", width: 6 - i, height: 6 - i,
-              borderRadius: "50%", background: "rgba(200,170,255,0.3)",
-              animation: `mockBall 3s linear infinite`,
-              animationDelay: `${delay}s`,
-              opacity: 1 - i * 0.25,
-            }} />
-          ))}
-          {/* Ball */}
-          <div style={{
-            position: "absolute", width: 9, height: 9, borderRadius: "50%",
-            background: "#f0f0ff", boxShadow: "0 0 12px rgba(200,170,255,0.9)",
-            animation: "mockBall 3s linear infinite",
-          }} />
+        {/* Enhanced scoring row — exact match to GameCanvas.jsx */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 20px 8px", background: "#0d0d0f",
+        }}>
+          <span style={{ color: "#c299ff", fontSize: 12, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>COMBO x3</span>
+          <span style={{ color: "#7ec8a4", fontSize: 12, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>2x</span>
+          <span style={{ color: "#e8e8f0", fontSize: 14, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>SCORE: 840</span>
         </div>
+
+        {/* The real canvas — exact dimensions from physics.js */}
+        <canvas
+          ref={canvasRef}
+          width={CW}
+          height={CH}
+          style={{ display: "block", margin: "0 20px 20px" }}
+        />
       </div>
     </div>
   );
 }
 
 export default function TrayPongLanding({ onStartGame }) {
-  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
-  const [cursorGrow, setCursorGrow] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [highScores, setHighScores] = useState([]);
-  const containerRef = useRef(null);
-
-  // Load high scores from localStorage
-  useEffect(() => {
-    const loadHighScores = () => {
-      try {
-        const scores = JSON.parse(localStorage.getItem('traypong-highscores') || '[]');
-        // Add backward compatibility for old scores
-        const processedScores = scores.map(score => ({
-          ...score,
-          playerName: score.playerName || 'Anonymous',
-          roundsWon: score.roundsWon || 0,
-        }));
-        setHighScores(processedScores);
-      } catch (error) {
-        console.error('Failed to load high scores:', error);
-        setHighScores([]);
-      }
-    };
-
-    loadHighScores();
-    
-    // Check for new scores every 2 seconds
-    const interval = setInterval(loadHighScores, 2000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onMove = (e) => {
-      const rect = el.getBoundingClientRect();
-      setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    };
-    el.addEventListener("mousemove", onMove);
-    return () => el.removeEventListener("mousemove", onMove);
-  }, []);
-
-  const hoverProps = {
-    onMouseEnter: () => setCursorGrow(true),
-    onMouseLeave: () => setCursorGrow(false),
-  };
 
   return (
     <div
-      ref={containerRef}
       style={{
         background: "#080810", color: "#f0f0fa",
         fontFamily: "'DM Mono', monospace",
         WebkitFontSmoothing: "antialiased",
         position: "relative", overflowX: "hidden",
-        cursor: "none",
       }}
     >
       {/* Google Fonts */}
@@ -345,19 +423,6 @@ export default function TrayPongLanding({ onStartGame }) {
         @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes scanlines { 0%{background-position:0 0} 100%{background-position:0 4px} }
       `}</style>
-
-      {/* Custom cursor */}
-      <div style={{
-        position: "absolute",
-        left: cursorPos.x, top: cursorPos.y,
-        width: cursorGrow ? 28 : 10, height: cursorGrow ? 28 : 10,
-        borderRadius: "50%",
-        background: cursorGrow ? "rgba(194,153,255,0.5)" : "#9966ff",
-        transform: "translate(-50%, -50%)",
-        pointerEvents: "none", zIndex: 9999,
-        transition: "width 0.2s ease, height 0.2s ease, background 0.2s ease",
-        mixBlendMode: "screen",
-      }} />
 
       {/* Scanline overlay */}
       <div style={{
@@ -382,10 +447,10 @@ export default function TrayPongLanding({ onStartGame }) {
         <div style={{ display: "flex", gap: "clamp(16px, 4vw, 32px)", flexWrap: "wrap" }}>
           {[
             ["#features", "Features"],
-            ["#howto", "Install"],
+            ["#howto", "How to Play"],
             ["download", "Play Demo"]
           ].map(([href, label]) => (
-            <a key={href} href={href} {...hoverProps} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", fontFamily: "var(--font)" }}>{label}</a>
+            <a key={href} href={href} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", fontFamily: "var(--font)" }}>{label}</a>
           ))}
         </div>
       </nav>
@@ -468,7 +533,7 @@ export default function TrayPongLanding({ onStartGame }) {
             flexDirection: "row", flexWrap: "wrap",
             animation: "fadeUp 0.8s 0.3s ease both" 
           }}>
-            <button onClick={onStartGame} {...hoverProps} style={{
+            <button onClick={onStartGame} style={{
               display: "inline-flex", alignItems: "center", gap: 10,
               background: "#9966ff", color: "#fff",
               fontFamily: "'DM Mono', monospace", fontSize: "clamp(12px, 3vw, 13px)", fontWeight: 500,
@@ -479,7 +544,7 @@ export default function TrayPongLanding({ onStartGame }) {
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Play Now
             </button>
-            <a href="#features" {...hoverProps} style={{
+            <a href="#features" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               background: "transparent", color: "#55556a",
               fontFamily: "'DM Mono', monospace", fontSize: "clamp(11px, 2.8vw, 12px)",
@@ -495,47 +560,39 @@ export default function TrayPongLanding({ onStartGame }) {
       {/* ── App Mockup ── */}
       <section style={{ padding: "20px 24px 100px", display: "flex", justifyContent: "center" }}>
         <Reveal>
-          <AppMockup 
-            showLeaderboard={showLeaderboard} 
-            setShowLeaderboard={setShowLeaderboard} 
-            highScores={highScores} 
-          />
+          <AppMockup />
         </Reveal>
       </section>
 
       {/* ── Stats ── */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
-        borderTop: "1px solid rgba(255,255,255,0.07)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        margin: "0 48px",
-      }}>
-        {STATS.map(({ num, unit, label }, i) => (
-          <Reveal key={label} delay={i * 0.1}>
-            <div style={{ 
-              padding: "clamp(24px, 4vw, 32px) clamp(20px, 3vw, 32px)", 
-              borderRight: i < 3 ? "1px solid rgba(255,255,255,0.07)" : "none" 
+      <Reveal>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexWrap: "wrap", gap: "6px",
+          padding: "20px clamp(24px, 5vw, 48px)",
+        }}>
+          {STATS.map(({ num, unit, label }, i) => (
+            <div key={label} style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "8px 18px",
+              background: "#0f0f1a",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: "100px",
             }}>
-              <div style={{ 
-                fontFamily: "'Syne', sans-serif", 
-                fontSize: "clamp(32px, 6vw, 40px)", 
-                fontWeight: 800, 
-                letterSpacing: "-0.03em", 
-                color: "#f0f0fa", 
-                lineHeight: 1, 
-                marginBottom: "clamp(4px, 1vw, 8px)" 
+              <span style={{
+                fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800,
+                letterSpacing: "-0.02em", color: "#f0f0fa", lineHeight: 1,
               }}>
                 {num}<span style={{ color: "#9966ff" }}>{unit}</span>
-              </div>
-              <div style={{ 
-                fontSize: "clamp(9px, 2vw, 11px)", 
-                color: "#55556a", 
-                letterSpacing: "0.05em" 
-              }}>{label}</div>
+              </span>
+              <span style={{
+                fontSize: 11, color: "#33333f",
+                letterSpacing: "0.03em",
+              }}>{label}</span>
             </div>
-          </Reveal>
-        ))}
-      </div>
+          ))}
+        </div>
+      </Reveal>
 
       {/* ── Features ── */}
       <section id="features" style={{ 
@@ -564,7 +621,7 @@ export default function TrayPongLanding({ onStartGame }) {
         }}>
           {FEATURES.map(({ icon, title, desc, tag }, i) => (
             <Reveal key={title} delay={(i % 3) * 0.1}>
-              <FeatureCard icon={icon} title={title} desc={desc} tag={tag} hoverProps={hoverProps} />
+              <FeatureCard icon={icon} title={title} desc={desc} tag={tag} />
             </Reveal>
           ))}
         </div>
@@ -586,53 +643,58 @@ export default function TrayPongLanding({ onStartGame }) {
             fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", 
             marginBottom: "clamp(40px, 6vw, 56px)" 
           }}>
-            Two ways <em style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontWeight: 400, color: "#55556a" }}>to run it.</em>
+            Up in <em style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontWeight: 400, color: "#55556a" }}>four steps.</em>
           </h2>
         </Reveal>
 
         <div style={{ 
-          paddingLeft: "clamp(24px, 5vw, 48px)", 
+          paddingLeft: 56, 
           position: "relative" 
         }}>
           <div style={{ 
-            position: "absolute", left: "clamp(12px, 3vw, 16px)", 
+            position: "absolute", left: 15,
             top: 20, bottom: 20, width: 1, 
             background: "linear-gradient(to bottom, #9966ff, rgba(153,102,255,0.1))" 
           }} />
-          {STEPS.map(({ num, title, desc, code }, i) => (
+          {STEPS.map(({ num, title, desc, warn }, i) => (
             <Reveal key={num} delay={i * 0.07}>
               <div style={{ 
                 position: "relative", 
-                padding: "clamp(20px, 4vw, 28px) 0", 
+                padding: "28px 0", 
                 borderBottom: i < STEPS.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none" 
               }}>
                 <div style={{
-                  position: "absolute", left: "clamp(-32px, -6vw, -40)", top: "clamp(20px, 4vw, 28px)",
-                  width: "clamp(28px, 5vw, 32px)", height: "clamp(28px, 5vw, 32px)", borderRadius: "50%",
+                  position: "absolute", left: -56, top: 28,
+                  width: 32, height: 32, borderRadius: "50%",
                   background: "#0f0f1a", border: "1px solid rgba(153,102,255,0.35)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "clamp(10px, 2.5vw, 11px)", color: "#9966ff", fontWeight: 500,
+                  fontSize: 11, color: "#9966ff", fontWeight: 500,
+                  flexShrink: 0,
                 }}>{num}</div>
                 <div style={{ 
                   fontFamily: "'Syne', sans-serif", 
-                  fontSize: "clamp(18px, 4vw, 20px)", 
-                  fontWeight: 700, marginBottom: "clamp(6px, 2vw, 8px)" 
+                  fontSize: 18,
+                  fontWeight: 700, marginBottom: 10,
+                  color: "#f0f0fa",
+                  lineHeight: 1.3,
                 }}>{title}</div>
                 <p style={{ 
-                  fontSize: "clamp(12px, 3vw, 13px)", 
-                  lineHeight: 1.7, color: "#55556a", 
-                  maxWidth: "100%" 
+                  fontSize: 14, 
+                  lineHeight: 1.75, color: "#888899",
                 }}>{desc}</p>
-                {code && (
-                  <div style={{ 
-                    marginTop: "clamp(8px, 2vw, 12px)", 
-                    background: "#0f0f1a", border: "1px solid rgba(255,255,255,0.07)", 
-                    borderRadius: 6, padding: "clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px)", 
-                    fontSize: "clamp(11px, 2.8vw, 12px)", color: "#c8c8d8", 
-                    display: "inline-block", overflowX: "auto", maxWidth: "100%"
+                {warn && (
+                  <div style={{
+                    marginTop: 14,
+                    padding: "12px 16px",
+                    background: "rgba(232,160,40,0.06)",
+                    border: "1px solid rgba(232,160,40,0.18)",
+                    borderLeft: "3px solid rgba(232,160,40,0.5)",
+                    borderRadius: "0 6px 6px 0",
                   }}>
-                    <span style={{ color: "#c299ff" }}>{code.cmd}</span>{" "}
-                    <span style={{ color: "#7ec8a4" }}>{code.sub}</span>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: "#c8a050", marginBottom: 5, letterSpacing: "0.04em" }}>
+                      {warn.label}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#888899", lineHeight: 1.65 }}>{warn.detail}</div>
                   </div>
                 )}
               </div>
@@ -680,44 +742,20 @@ export default function TrayPongLanding({ onStartGame }) {
           </p>
         </Reveal>
         <Reveal delay={0.2}>
-          <div style={{ 
-            display: "inline-flex", flexDirection: "column", alignItems: "center", 
-            gap: "clamp(12px, 3vw, 14px)" 
-          }}>
-            <button onClick={onStartGame} {...hoverProps} style={{
-              display: "inline-flex", alignItems: "center", gap: "clamp(10px, 2.5vw, 12px)",
+          <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <a href="TrayPong.dmg" download style={{
+              display: "inline-flex", alignItems: "center", gap: 12,
               background: "#f0f0fa", color: "#080810",
-              fontFamily: "'Syne', sans-serif", fontSize: "clamp(14px, 3.5vw, 16px)", fontWeight: 700,
-              letterSpacing: "0.02em", 
-              padding: "clamp(14px, 3.5vw, 18px) clamp(32px, 7vw, 40px)", 
-              borderRadius: 8,
-              textDecoration: "none", border: "none", cursor: "none",
+              fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700,
+              letterSpacing: "0.02em", padding: "18px 40px", borderRadius: 8,
+              textDecoration: "none", cursor: "none",
               transition: "transform 0.15s, box-shadow 0.2s",
               boxShadow: "0 0 60px rgba(240,240,255,0.15)",
-              maxWidth: "100%",
             }}>
-              <span style={{ fontSize: "clamp(18px, 4vw, 20px)" }}>🏓</span>
-              <span>
-                Play TrayPong Now
-                <small style={{ 
-                  display: "block", fontFamily: "'DM Mono', monospace", 
-                  fontSize: "clamp(9px, 2.2vw, 10px)", fontWeight: 400, 
-                  opacity: 0.5, letterSpacing: "0.05em", marginTop: 1 
-                }}>
-                  Start playing instantly
-                </small>
-              </span>
-            </button>
-            <span style={{ 
-              fontSize: "clamp(9px, 2.2vw, 10px)", 
-              letterSpacing: "0.1em", color: "#55556a", textTransform: "uppercase" 
-            }}>Free & Open Source</span>
-            <p style={{ 
-              fontSize: "clamp(10px, 2.5vw, 11px)", 
-              color: "#2a2a35", letterSpacing: "0.04em",
-              maxWidth: "clamp(250px, 70vw, 350px)",
-              margin: "0 auto"
-            }}>No account needed · No telemetry · Just Pong</p>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Download for macOS
+            </a>
+            <span style={{ fontSize: 10, letterSpacing: "0.1em", color: "#55556a", textTransform: "uppercase" }}>Free · macOS 12+</span>
           </div>
         </Reveal>
       </section>
@@ -727,29 +765,17 @@ export default function TrayPongLanding({ onStartGame }) {
         borderTop: "1px solid rgba(255,255,255,0.07)", 
         padding: "clamp(24px, 5vw, 32px) clamp(24px, 5vw, 48px)", 
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: "clamp(16px, 3vw, 20px)"
+        flexWrap: "wrap", gap: "clamp(16px, 3vw, 20px)"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "clamp(12px, 3vw, 16px)" }}>
-          <span style={{ 
-            fontFamily: "'Syne', sans-serif", fontWeight: 800, 
-            fontSize: "clamp(12px, 3vw, 13px)", color: "#f0f0fa" 
-          }}>TRAYPONG</span>
-          <span style={{ 
-            fontSize: "clamp(10px, 2.5vw, 11px)", 
-            color: "#55556a" 
-          }}>Built with React + Electron</span>
-        </div>
-        <div style={{ 
-          display: "flex", gap: "clamp(16px, 4vw, 24px)", 
-          flexWrap: "wrap"
-        }}>
-          {[["#features", "Features"], ["#howto", "Install"], ["tray-pong.zip", "Download"]].map(([href, label]) => (
-            <a key={label} href={href} {...hoverProps} style={{ 
-              fontSize: "clamp(10px, 2.5vw, 11px)", 
-              color: "#55556a", textDecoration: "none" 
-            }}>{label}</a>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 13, color: "#f0f0fa" }}>TRAYPONG</span>
+
+        <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: 13, color: "#9966ff" }}>
+          © {new Date().getFullYear()} TrayPong · Your menu bar has been too boring for too long
+        </span>
+
+        <div style={{ display: "flex", gap: "clamp(16px, 4vw, 24px)", flexWrap: "wrap" }}>
+          {[["#features", "Features"], ["#howto", "Install"], ["TrayPong.dmg", "Download"]].map(([href, label]) => (
+            <a key={label} href={href} style={{ fontSize: 11, color: "#55556a", textDecoration: "none" }}>{label}</a>
           ))}
         </div>
       </footer>
@@ -757,12 +783,12 @@ export default function TrayPongLanding({ onStartGame }) {
   );
 }
 
-function FeatureCard({ icon, title, desc, tag, hoverProps }) {
+function FeatureCard({ icon, title, desc, tag }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
-      onMouseEnter={() => { setHovered(true); hoverProps.onMouseEnter(); }}
-      onMouseLeave={() => { setHovered(false); hoverProps.onMouseLeave(); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         background: hovered ? "#161624" : "#0f0f1a",
         padding: "32px 28px",
