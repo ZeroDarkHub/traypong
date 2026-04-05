@@ -397,7 +397,7 @@ export default function TrayPongLanding({ onStartGame }) {
           <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(48px, 10vw, 128px)", fontWeight: 800, lineHeight: 0.9, letterSpacing: "-0.02em", marginBottom: "clamp(20px, 4vw, 28px)", animation: "fadeUp 0.8s 0.1s ease both" }}>
             TRAY<span style={{ color: "#9966ff" }}>PONG</span>
           </h1>
-          <p style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: "clamp(16px, 4vw, 24px)", color: "#55556a", maxWidth: "clamp(280px, 80vw, 480px)", margin: "0 auto clamp(32px, 6vw, 48px)", lineHeight: 1.5, animation: "fadeUp 0.8s 0.2s ease both" }}>
+          <p style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: "clamp(14px, 3.5vw, 20px)", color: "#55556a", maxWidth: "clamp(280px, 80vw, 480px)", margin: "0 auto clamp(32px, 6vw, 48px)", lineHeight: 1.5, animation: "fadeUp 0.8s 0.2s ease both" }}>
             Classic Pong, always one click away in your menu bar.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "clamp(12px, 3vw, 16px)", justifyContent: "center", flexWrap: "wrap", animation: "fadeUp 0.8s 0.3s ease both" }}>
