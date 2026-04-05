@@ -29,8 +29,16 @@ function createTray() {
     tray = null;
   }
   
-  // Use the traypong.png image as the tray icon, resized to small dimensions
-  const iconPath = path.join(__dirname, '../public/img/traypong.png');
+  // Handle tray icon path differently in dev vs production
+  let iconPath;
+  if (isDev) {
+    // Development: use public folder
+    iconPath = path.join(__dirname, '../public/img/traypong.png');
+  } else {
+    // Production: use packaged resources
+    iconPath = path.join(__dirname, '../build/img/traypong.png');
+  }
+  
   const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 128, height: 128 });
 
   try {

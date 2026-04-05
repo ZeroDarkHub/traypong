@@ -7,8 +7,9 @@
   "scripts": {
     "start": "BROWSER=chrome react-scripts start",
     "dev": "npm run electron:dev",
-    "build": "react-scripts build && npm run copy-dmg",
+    "build": "react-scripts build && npm run copy-dmg && npm run copy-img",
     "copy-dmg": "cp dist/TrayPong-*.dmg build/",
+    "copy-img": "cp -r public/img build/",
     "electron": "electron .",
     "electron:dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "npm run build && electron-builder --mac",
@@ -34,7 +35,9 @@
     },
     "files": [
       "build/**/*",
+      "build/img/**/*",
       "electron/**/*",
+      "public/img/**/*",
       "node_modules/**/*"
     ],
     "directories": {
