@@ -23,13 +23,21 @@ const WINDOW_HEIGHT = 520;
 
 // ─── Create the tray icon ─────────────────────────────────────────────────────
 function createTray() {
-  // Use a simple programmatic icon (16x16 white rectangle representing a paddle/ball)
-  // In production you'd supply a real IconTemplate.png in /assets
-  const iconPath = path.join(__dirname, 'tray-icon.png');
+  // Destroy existing tray if it exists
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
+  
+  // Use the traypong.png image as the tray icon, resized to small dimensions
+  const iconPath = path.join(__dirname, '../public/img/traypong.png');
+  const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 128, height: 128 });
 
   try {
-    tray = new Tray(iconPath);
-  } catch {
+    tray = new Tray(trayIcon);
+    console.log('Tray icon loaded and resized from:', iconPath);
+  } catch (error) {
+    console.error('Failed to load tray icon:', error);
     // Fallback: create a minimal native image
     const icon = nativeImage.createEmpty();
     tray = new Tray(icon);

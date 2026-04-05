@@ -14,13 +14,13 @@ export const PADDLE_Y_PLAYER = CANVAS_H - 24;   // player paddle Y (bottom)
 export const PADDLE_Y_AI = 16;                    // AI paddle Y (top)
 
 // Speed config
-export const INITIAL_BALL_SPEED = 4.2;
-export const MAX_BALL_SPEED = 9.5;
-export const SPEED_INCREMENT = 0.18;  // added per paddle hit
+export const INITIAL_BALL_SPEED = 5.5;
+export const MAX_BALL_SPEED = 25.0;  // increased maximum speed for endgame intensity
+export const SPEED_INCREMENT = 0.6;  // added per paddle hit (significantly increased for rapidly increasing difficulty)
 
 // AI config
-export const AI_BASE_SPEED = 2.8;
-export const AI_MAX_SPEED = 5.5;
+export const AI_BASE_SPEED = 2.4;  // increased from 2.0 for better challenge
+export const AI_MAX_SPEED = 4.2;   // increased from 3.8 for better challenge
 
 /**
  * Create a fresh ball state aimed at the player.
@@ -145,10 +145,15 @@ export function ballHitsPaddle(ball, paddleX, paddleY) {
  */
 export function moveAI(aiX, ballX, difficulty = 0.5, dt = 1) {
   const speed = AI_BASE_SPEED + difficulty * (AI_MAX_SPEED - AI_BASE_SPEED);
-  const targetX = ballX - PADDLE_W / 2;
+  
+  // Add occasional prediction error for more natural feel
+  const errorChance = 0.15 - difficulty * 0.1; // Less error at higher difficulty
+  const predictionError = Math.random() < errorChance ? (Math.random() - 0.5) * 20 : 0;
+  
+  const targetX = ballX - PADDLE_W / 2 + predictionError;
 
   // Add slight intentional lag for fairness
-  const lagFactor = 0.85 + difficulty * 0.12;
+  const lagFactor = 0.82 + difficulty * 0.1; // Slightly more lag for natural feel
   const interpolated = aiX + (targetX - aiX) * lagFactor * 0.08;
 
   const dx = interpolated - aiX;

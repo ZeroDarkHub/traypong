@@ -55,7 +55,8 @@ export default function Leaderboard({ highlightRank, highlightScore, onClose }) 
                   {rank <= 3 ? medals[rank - 1] : `#${rank}`}
                 </span>
                 <span className="lb-name">{entry.name}</span>
-                <span className="lb-date">{entry.date}</span>
+                <span className="lb-date">{new Date(entry.date).toLocaleDateString()}</span>
+                <span className="lb-rounds">{entry.roundsWon || 0} rounds</span>
                 <span className="lb-score">{entry.score}</span>
               </div>
             );

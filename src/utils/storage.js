@@ -8,7 +8,7 @@ const STORAGE_KEY = 'traypong_leaderboard';
 const MAX_ENTRIES = 10;
 
 /**
- * @typedef {{ name: string, score: number, date: string }} LeaderboardEntry
+ * @typedef {{ name: string, score: number, roundsWon: number, date: string }} LeaderboardEntry
  */
 
 /**
@@ -32,16 +32,18 @@ export function loadLeaderboard() {
  *
  * @param {string} name
  * @param {number} score
+ * @param {number} roundsWon
  * @returns {{ leaderboard: LeaderboardEntry[], rank: number | null }}
  */
-export function saveScore(name, score) {
+export function saveScore(name, score, roundsWon) {
   if (score <= 0) return { leaderboard: loadLeaderboard(), rank: null };
 
   const board = loadLeaderboard();
 
   const entry = {
-    name: (name || 'Anonymous').slice(0, 16),
+    name: (name || 'Anonymous').slice(0, 10), // Limit to 10 chars
     score,
+    roundsWon: roundsWon || 0,
     date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
   };
 

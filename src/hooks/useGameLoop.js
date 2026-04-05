@@ -23,9 +23,46 @@ export const GAME_STATE = {
   GAME_OVER: 'gameover',
 };
 
-const WINNING_SCORE = 7;
+const AI_WINNING_SCORE = 3; // AI only needs 3 points to win
 const SCORE_PAUSE_MS = 800; // ms pause after each point
 const SHAKE_DURATION = 12; // frames
+
+// ─── High Score Management ─────────────────────────────────────────────────────
+function saveHighScore(score, roundsWon, playerName = 'Anonymous') {
+  try {
+    // Use the same storage key as Leaderboard component
+    const STORAGE_KEY = 'traypong_leaderboard';
+    const currentHighScores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    currentHighScores.push({
+      name: playerName, // Leaderboard expects 'name' not 'playerName'
+      score: score,
+      roundsWon: roundsWon, // Add rounds won to data structure
+      date: new Date().toISOString(),
+    });
+    // Keep top 10 scores (sorted by score descending)
+    currentHighScores.sort((a, b) => b.score - a.score);
+    const topScores = currentHighScores.slice(0, 10);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(topScores));
+    
+    // Verify it was saved
+    const verify = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    console.log('Saved and verified:', verify);
+    
+    return topScores;
+  } catch (error) {
+    console.error('Failed to save high score:', error);
+    return [];
+  }
+}
+
+function getHighScores() {
+  try {
+    return JSON.parse(localStorage.getItem('traypong-highscores') || '[]');
+  } catch (error) {
+    console.error('Failed to get high scores:', error);
+    return [];
+  }
+}
 
 // ─── Initial state factory ────────────────────────────────────────────────────
 function makeInitialState() {
@@ -40,6 +77,52 @@ function makeInitialState() {
     rallyCount: 0,   // consecutive paddle hits this rally
     difficulty: 0,   // 0..1, increases with score
     winner: null,    // 'player' | 'ai'
+    // Enhanced scoring system
+    comboCount: 0,    // consecutive successful hits
+    multiplier: 1,    // score multiplier based on combo
+    totalScore: 0,    // endless scoring total
+    lastHitPosition: null, // for edge hit bonuses
+    highScores: getHighScores(), // Load existing high scores
+    finalScore: 0,   // Final score when game ends
+    roundsWon: 0,    // Number of rounds player won
+    playerName: '',  // Player name for high score
+    isEnteringName: false, // Whether player is entering name
+  };
+}
+
+// ─── Enhanced Scoring System ────────────────────────────────────────────────
+function calculateMultiplier(comboCount) {
+  if (comboCount >= 20) return 5;
+  if (comboCount >= 11) return 3;
+  if (comboCount >= 6) return 2;
+  return 1;
+}
+
+function calculateEdgeBonus(hitPosition, paddleX) {
+  const hitPos = Math.abs(hitPosition - paddleX) / PADDLE_W; // 0..1
+  const edgeDistance = Math.min(hitPos, 1 - hitPos); // distance from nearest edge
+  
+  if (edgeDistance > 0.8) return 50; // Edge hit bonus
+  if (edgeDistance > 0.6) return 20; // Near edge bonus
+  return 0; // No bonus
+}
+
+function updateScoring(state, hitPosition, paddleX) {
+  const edgeBonus = calculateEdgeBonus(hitPosition, paddleX);
+  const newComboCount = state.comboCount + 1;
+  const newMultiplier = calculateMultiplier(newComboCount);
+  
+  // Base points + speed bonus + edge bonus
+  const basePoints = 10;
+  const speedBonus = Math.floor(state.difficulty * 20);
+  const totalPoints = (basePoints + speedBonus + edgeBonus) * newMultiplier;
+  
+  return {
+    ...state,
+    comboCount: newComboCount,
+    multiplier: newMultiplier,
+    totalScore: state.totalScore + totalPoints,
+    lastHitPosition: hitPosition,
   };
 }
 
@@ -150,6 +233,12 @@ export function useGameLoop(canvasRef) {
       shake = SHAKE_DURATION;
       sound.paddleHit(rallyCount);
       difficulty = Math.min(1, difficulty + 0.015);
+      
+      // Update enhanced scoring
+      const scoringState = updateScoring(stateRef.current, x, playerX);
+      s.comboCount = scoringState.comboCount;
+      s.multiplier = scoringState.multiplier;
+      s.totalScore = scoringState.totalScore;
     }
 
     // ── AI paddle collision ─────────────────────────────────────────────────
@@ -175,14 +264,39 @@ export function useGameLoop(canvasRef) {
     let scored = false;
 
     if (y + BALL_RADIUS > CANVAS_H) {
-      // AI scores
+      // AI scores - reset combo
       aiScore++;
       sound.aiScore();
       scored = true;
       rallyCount = 0;
+      s.comboCount = 0; // Reset combo on miss
+      s.multiplier = 1; // Reset multiplier
 
-      if (aiScore >= WINNING_SCORE) {
-        stateRef.current = { ...s, ball, playerX, aiX, aiScore, playerScore, rallyCount, difficulty, shake, gameState: GAME_STATE.GAME_OVER, winner: 'ai' };
+      if (aiScore >= AI_WINNING_SCORE) {
+        // Trigger name entry when AI wins (don't save score yet)
+        const finalScore = s.totalScore;
+        const roundsWon = playerScore; // Player's score represents rounds won
+        
+        stateRef.current = { 
+          ...s, 
+          ball, 
+          playerX, 
+          aiX, 
+          aiScore, 
+          playerScore, 
+          rallyCount, 
+          difficulty, 
+          shake, 
+          comboCount: s.comboCount, 
+          multiplier: s.multiplier, 
+          totalScore: s.totalScore, 
+          gameState: GAME_STATE.GAME_OVER, 
+          winner: 'ai',
+          finalScore: finalScore,
+          roundsWon: roundsWon,
+          isEnteringName: true, // Trigger name entry mode
+          playerName: '' // Clear previous name
+        };
         sound.gameOver();
         syncRender();
         rafRef.current = requestAnimationFrame(tick);
@@ -191,19 +305,11 @@ export function useGameLoop(canvasRef) {
     }
 
     if (y - BALL_RADIUS < 0) {
-      // Player scores
+      // Player scores - just increment, no winning condition
       playerScore++;
       sound.playerScore();
       scored = true;
       rallyCount = 0;
-
-      if (playerScore >= WINNING_SCORE) {
-        stateRef.current = { ...s, ball, playerX, aiX, aiScore, playerScore, rallyCount, difficulty, shake, gameState: GAME_STATE.GAME_OVER, winner: 'player' };
-        sound.newHighScore();
-        syncRender();
-        rafRef.current = requestAnimationFrame(tick);
-        return;
-      }
     }
 
     if (scored) {
@@ -222,7 +328,7 @@ export function useGameLoop(canvasRef) {
       }, SCORE_PAUSE_MS);
     } else {
       ball = { x, y, vx, vy, speed, trail };
-      stateRef.current = { ...s, ball, playerX, aiX, aiScore, playerScore, rallyCount, difficulty, shake, gameState };
+      stateRef.current = { ...s, ball, playerX, aiX, aiScore, playerScore, rallyCount, difficulty, shake, comboCount: s.comboCount, multiplier: s.multiplier, totalScore: s.totalScore, gameState };
       syncRender();
     }
 
@@ -279,6 +385,9 @@ export function useGameLoop(canvasRef) {
 
   // ─── Keyboard controls ───────────────────────────────────────────────────────
   const handleKeyDown = useCallback((e) => {
+    // Don't handle game controls if user is entering name
+    if (stateRef.current.isEnteringName) return;
+    
     if (e.key === 'ArrowLeft') {
       keysRef.current.left = true;
       keysRef.current.right = false; // Cancel opposite direction
@@ -335,6 +444,32 @@ export function useGameLoop(canvasRef) {
     };
   }, [pauseGame, resumeGame]);
 
+  // ─── Name input functions ─────────────────────────────────────────────────────
+  const updatePlayerName = useCallback((name) => {
+    stateRef.current = { ...stateRef.current, playerName: name };
+    syncRender();
+  }, [syncRender]);
+
+  const submitHighScore = useCallback(() => {
+    const s = stateRef.current;
+    if (s.isEnteringName && s.finalScore > 0) {
+      const name = s.playerName.trim() || 'Anonymous';
+      const highScores = saveHighScore(s.finalScore, s.roundsWon, name);
+      stateRef.current = { 
+        ...s, 
+        highScores: highScores, 
+        isEnteringName: false 
+      };
+      syncRender();
+      
+      // Trigger storage event to refresh Leaderboard component
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'traypong_leaderboard',
+        newValue: localStorage.getItem('traypong_leaderboard')
+      }));
+    }
+  }, [syncRender]);
+
   // ─── Start loop on mount ──────────────────────────────────────────────────────
   useEffect(() => {
     startLoop();
@@ -349,5 +484,7 @@ export function useGameLoop(canvasRef) {
     updateMouseX,
     handleKeyDown,
     handleKeyUp,
+    updatePlayerName,
+    submitHighScore,
   };
 }

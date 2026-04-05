@@ -112,7 +112,7 @@ function Reveal({ children, delay = 0, style = {} }) {
   );
 }
 
-function AppMockup() {
+function AppMockup({ showLeaderboard, setShowLeaderboard, highScores }) {
   return (
     <div style={{ position: "relative", display: "inline-flex", flexDirection: "column" }}>
       {/* Glow ring */}
@@ -149,11 +149,64 @@ function AppMockup() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "10px 14px 8px", borderBottom: "1px solid #1a1a22",
         }}>
-          <span style={{ fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#9966ff", fontFamily: "DM Mono, monospace" }}>TRAY PONG</span>
-          <div style={{ display: "flex", gap: 8 }}>
-            {["🔈", "🏆", "✕"].map(c => (
-              <span key={c} style={{ fontSize: 12, color: "#33333f" }}>{c}</span>
-            ))}
+          <span style={{ fontSize: 9, letterSpacing: "0.15em", textTransform: "uppercase", color: "#9966ff", fontFamily: "var(--font)" }}>TRAY PONG</span>
+          <div style={{ display: "flex", gap: 8, position: "relative" }}>
+            <span style={{ fontSize: 12, color: "#33333f" }}>🔈</span>
+            <button
+              onClick={() => setShowLeaderboard(!showLeaderboard)}
+              style={{
+                fontSize: 12, color: "#33333f", background: "none", border: "none",
+                cursor: "pointer", padding: 0, borderRadius: 2,
+                transition: "color 0.2s ease"
+              }}
+              onMouseEnter={(e) => e.target.style.color = "#9966ff"}
+              onMouseLeave={(e) => e.target.style.color = "#33333f"}
+            >
+              🏆
+            </button>
+            <span style={{ fontSize: 12, color: "#33333f" }}>✕</span>
+            
+            {/* Leaderboard Dropdown */}
+            {showLeaderboard && (
+              <div style={{
+                position: "absolute", top: "100%", right: 0, marginTop: "4px",
+                background: "#0d0d0f", border: "1px solid #1a1a22", borderRadius: "6px",
+                padding: "8px", minWidth: "200px", zIndex: 1000,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
+              }}>
+                <div style={{
+                  color: "#9966ff", fontSize: "10px", fontWeight: "bold",
+                  marginBottom: "6px", textAlign: "center", letterSpacing: "0.1em"
+                }}>
+                  🏆 TOP 10 HIGH SCORES ({highScores.length} found)
+                </div>
+                <div style={{ color: "#666", fontSize: "8px", marginBottom: "4px", textAlign: "center" }}>
+                  {highScores.length > 0 ? `Sample: ${highScores[0].playerName || 'No name'} - ${highScores[0].score || 'No score'}` : 'No data'}
+                </div>
+                {highScores.length > 0 ? (
+                  highScores.slice(0, 10).map((score, index) => (
+                    <div key={index} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "3px 0", fontSize: "9px",
+                      color: index === 0 ? "#c299ff" : "#f0f0fa",
+                      fontWeight: index < 3 ? "bold" : "normal"
+                    }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ opacity: 0.6, minWidth: "12px" }}>
+                          {index + 1}.
+                        </span>
+                        <span>{score.playerName}</span>
+                      </span>
+                      <span>{score.score}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ color: "#666", fontSize: "9px", textAlign: "center", padding: "8px 0" }}>
+                    No high scores yet
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -219,7 +272,35 @@ function AppMockup() {
 export default function TrayPongLanding({ onStartGame }) {
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
   const [cursorGrow, setCursorGrow] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [highScores, setHighScores] = useState([]);
   const containerRef = useRef(null);
+
+  // Load high scores from localStorage
+  useEffect(() => {
+    const loadHighScores = () => {
+      try {
+        const scores = JSON.parse(localStorage.getItem('traypong-highscores') || '[]');
+        // Add backward compatibility for old scores
+        const processedScores = scores.map(score => ({
+          ...score,
+          playerName: score.playerName || 'Anonymous',
+          roundsWon: score.roundsWon || 0,
+        }));
+        setHighScores(processedScores);
+      } catch (error) {
+        console.error('Failed to load high scores:', error);
+        setHighScores([]);
+      }
+    };
+
+    loadHighScores();
+    
+    // Check for new scores every 2 seconds
+    const interval = setInterval(loadHighScores, 2000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -294,13 +375,17 @@ export default function TrayPongLanding({ onStartGame }) {
         zIndex: 100, borderBottom: "1px solid rgba(255,255,255,0.04)",
         flexWrap: "wrap", gap: "16px",
       }}>
-        <a href="#" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(14px, 3.5vw, 16px)", fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa", textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
+        <a href="#" style={{ fontFamily: "var(--font)", fontSize: "clamp(14px, 3.5vw, 16px)", fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa", textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#9966ff", animation: "pulseDot 2s ease infinite" }} />
           TRAYPONG
         </a>
         <div style={{ display: "flex", gap: "clamp(16px, 4vw, 32px)", flexWrap: "wrap" }}>
-          {[["#features", "Features"], ["#howto", "Install"], ["download", "Play Now"]].map(([href, label]) => (
-            <a key={href} href={href} {...hoverProps} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none" }}>{label}</a>
+          {[
+            ["#features", "Features"],
+            ["#howto", "Install"],
+            ["download", "Play Demo"]
+          ].map(([href, label]) => (
+            <a key={href} href={href} {...hoverProps} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", fontFamily: "var(--font)" }}>{label}</a>
           ))}
         </div>
       </nav>
@@ -362,19 +447,19 @@ export default function TrayPongLanding({ onStartGame }) {
             macOS menu bar · instantly playable
           </p>
           <h1 style={{
-            fontFamily: "'Syne', sans-serif", fontSize: "clamp(48px, 10vw, 128px)",
+            fontFamily: "var(--font)", fontSize: "clamp(48px, 10vw, 128px)",
             fontWeight: 800, lineHeight: "clamp(0.8, 1.1, 0.9)", letterSpacing: "-0.02em",
             marginBottom: "clamp(20px, 4vw, 28px)", animation: "fadeUp 0.8s 0.1s ease both",
           }}>
             TRAY<span style={{ color: "#9966ff" }}>PONG</span>
           </h1>
           <p style={{
-            fontFamily: "'Instrument Serif', serif", fontStyle: "italic",
+            fontFamily: "var(--font)", fontStyle: "italic",
             fontSize: "clamp(16px, 4vw, 24px)", color: "#55556a",
             maxWidth: "clamp(280px, 80vw, 480px)", margin: "0 auto clamp(32px, 6vw, 48px)", 
             lineHeight: 1.5, animation: "fadeUp 0.8s 0.2s ease both",
           }}>
-            Classic Pong, always one click away. Lives quietly in your menu bar.
+            Classic Pong, always one click away in your menu bar.
           </p>
           <div style={{ 
             display: "flex", alignItems: "center", 
@@ -410,7 +495,11 @@ export default function TrayPongLanding({ onStartGame }) {
       {/* ── App Mockup ── */}
       <section style={{ padding: "20px 24px 100px", display: "flex", justifyContent: "center" }}>
         <Reveal>
-          <AppMockup />
+          <AppMockup 
+            showLeaderboard={showLeaderboard} 
+            setShowLeaderboard={setShowLeaderboard} 
+            highScores={highScores} 
+          />
         </Reveal>
       </section>
 

@@ -29,6 +29,8 @@ const COLORS = {
   dimText: '#555560',
   accent: '#9966ff',
   accentGlow: 'rgba(153, 102, 255, 0.4)',
+  combo: '#c299ff',
+  multiplier: '#7ec8a4',
   playerGlow: 'rgba(232, 232, 255, 0.35)',
   aiGlow: 'rgba(232, 64, 64, 0.35)',
 };
@@ -118,12 +120,12 @@ function drawOverlay(ctx, text, subtext) {
 
   ctx.textAlign = 'center';
   ctx.fillStyle = COLORS.scoreText;
-  ctx.font = 'bold 22px "SF Pro Display", "Helvetica Neue", sans-serif';
+  ctx.font = 'bold 16px "SF Pro Display", "Helvetica Neue", sans-serif';
   ctx.fillText(text, CANVAS_W / 2, CANVAS_H / 2 - 12);
 
   if (subtext) {
     ctx.fillStyle = COLORS.dimText;
-    ctx.font = '13px "SF Pro Display", "Helvetica Neue", sans-serif';
+    ctx.font = '12px "SF Pro Display", "Helvetica Neue", sans-serif';
     ctx.fillText(subtext, CANVAS_W / 2, CANVAS_H / 2 + 14);
   }
 }
@@ -132,7 +134,7 @@ function drawOverlay(ctx, text, subtext) {
 
 export default function GameCanvas({ onGameOver }) {
   const canvasRef = useRef(null);
-  const { renderState, startGame, updateMouseX, handleKeyDown, handleKeyUp, pauseGame, resumeGame } = useGameLoop(canvasRef);
+  const { renderState, startGame, updateMouseX, handleKeyDown, handleKeyUp, pauseGame, resumeGame, updatePlayerName, submitHighScore } = useGameLoop(canvasRef);
 
   // ─── Draw to canvas whenever renderState changes ─────────────────────────
   useEffect(() => {
@@ -185,9 +187,21 @@ export default function GameCanvas({ onGameOver }) {
       const msg = playerScore > aiScore ? 'YOU SCORE!' : 'AI SCORES!';
       drawOverlay(ctx, msg, 'Get ready...');
     } else if (gameState === GAME_STATE.GAME_OVER) {
-      const { winner } = renderState;
-      const msg = winner === 'player' ? '🏆 YOU WIN!' : 'AI WINS';
-      drawOverlay(ctx, msg, 'Click to play again');
+      const { winner, finalScore, highScores, roundsWon, isEnteringName, playerName } = renderState;
+      if (winner === 'ai') {
+        if (isEnteringName) {
+          // Show name input screen
+          drawOverlay(ctx, `GAME OVER - ${finalScore} pts (${roundsWon} rounds)`, 'Enter your name:');
+        } else {
+          // Show final score and high scores
+          const highScoreText = highScores.length > 0 
+            ? `Best: ${highScores[0].score} pts by ${highScores[0].playerName}` 
+            : 'No high scores yet';
+          drawOverlay(ctx, `Score saved! ${finalScore} pts`, highScoreText);
+        }
+      } else {
+        drawOverlay(ctx, '🏆 YOU WIN!', 'Click to play again');
+      }
     }
 
     ctx.restore();
@@ -223,7 +237,10 @@ export default function GameCanvas({ onGameOver }) {
 
   // ─── Click to start / restart ──────────────────────────────────────────────
   const handleClick = useCallback(() => {
-    const { gameState } = renderState;
+    const { gameState, isEnteringName } = renderState;
+    // Don't start game if user is entering name
+    if (isEnteringName) return;
+    
     if (
       gameState === GAME_STATE.IDLE ||
       gameState === GAME_STATE.GAME_OVER ||
@@ -260,6 +277,25 @@ export default function GameCanvas({ onGameOver }) {
           <span className="score-label">YOU</span>
         </div>
       </div>
+      
+      {/* Enhanced scoring display */}
+      <div className="enhanced-score">
+        <div className="combo-display">
+          <span style={{ color: COLORS.combo, fontSize: '12px', fontWeight: 'bold' }}>
+            COMBO x{renderState.comboCount || 0}
+          </span>
+        </div>
+        <div className="multiplier-display">
+          <span style={{ color: COLORS.multiplier, fontSize: '12px', fontWeight: 'bold' }}>
+            {renderState.multiplier || 1}x
+          </span>
+        </div>
+        <div className="total-score-display">
+          <span style={{ color: COLORS.scoreText, fontSize: '14px', fontWeight: 'bold' }}>
+            SCORE: {renderState.totalScore || 0}
+          </span>
+        </div>
+      </div>
 
       {/* Canvas */}
       <canvas
@@ -277,6 +313,61 @@ export default function GameCanvas({ onGameOver }) {
       {renderState.gameState === GAME_STATE.PLAYING && renderState.rallyCount > 3 && (
         <div className="rally-badge">
           🔥 {renderState.rallyCount} rally
+        </div>
+      )}
+
+      {/* Name input for high score */}
+      {renderState.gameState === GAME_STATE.GAME_OVER && renderState.winner === 'ai' && renderState.isEnteringName && (
+        <div style={{
+          position: 'absolute',
+          top: '65%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(13, 13, 15, 0.9)',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        }}>
+          <input
+            type="text"
+            value={renderState.playerName}
+            onChange={(e) => updatePlayerName(e.target.value.slice(0, 10))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                submitHighScore();
+              }
+            }}
+            maxLength={10}
+            placeholder="Enter your name (10 chars max)..."
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#f0f0ff',
+              fontSize: '12px',
+              fontFamily: '"SF Pro Display", "Helvetica Neue", sans-serif',
+              textAlign: 'center',
+              outline: 'none',
+              width: '140px',
+            }}
+            autoFocus
+          />
+          <button
+            onClick={submitHighScore}
+            style={{
+              background: '#9966ff',
+              border: 'none',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontFamily: '"SF Pro Display", "Helvetica Neue", sans-serif',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              marginTop: '6px',
+              width: '100%',
+            }}
+          >
+            Save Score
+          </button>
         </div>
       )}
     </div>
