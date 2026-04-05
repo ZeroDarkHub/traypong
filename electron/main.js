@@ -35,11 +35,37 @@ function createTray() {
     // Development: use public folder
     iconPath = path.join(__dirname, '../public/img/traypong.png');
   } else {
-    // Production: use resources path (this is where extraResources puts files)
-    iconPath = path.join(process.resourcesPath, 'img/traypong.png');
+    // Production: try multiple paths for asar packaging
+    const possiblePaths = [
+      path.join(process.resourcesPath, 'img/traypong.png'), // extraResources location
+      path.join(__dirname, '../build/img/traypong.png'), // build location
+      path.join(__dirname, '../../build/img/traypong.png'), // asar unpacked location
+      path.join(__dirname, '../../../build/img/traypong.png'), // deeper asar location
+      path.join(__dirname, 'img/traypong.png'), // same directory
+    ];
+    
+    // Find the first path that exists
+    for (const testPath of possiblePaths) {
+      console.log('Testing path:', testPath);
+      try {
+        if (require('fs').existsSync(testPath)) {
+          iconPath = testPath;
+          console.log('Found tray icon at:', iconPath);
+          break;
+        }
+      } catch (e) {
+        console.log('Path test failed:', testPath, e.message);
+      }
+    }
+    
+    // If still not found, use the first one as fallback
+    if (!iconPath) {
+      iconPath = possiblePaths[0];
+      console.log('Using fallback path:', iconPath);
+    }
   }
   
-  console.log('Loading tray icon from:', iconPath);
+  console.log('Final tray icon path:', iconPath);
   console.log('Icon path exists:', require('fs').existsSync(iconPath));
   console.log('Is dev mode:', isDev);
   console.log('Current __dirname:', __dirname);
@@ -50,44 +76,21 @@ function createTray() {
     // Try to load the icon from file
     if (require('fs').existsSync(iconPath)) {
       trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 128, height: 128 });
-      console.log('Tray icon loaded from file:', iconPath);
+      console.log('Tray icon loaded successfully from:', iconPath);
     } else {
-      // If file doesn't exist, try alternative paths
-      const fallbackPaths = [
-        path.join(__dirname, '../build/img/traypong.png'),
-        path.join(__dirname, '../../build/img/traypong.png'),
-        path.join(__dirname, '../../../build/img/traypong.png')
-      ];
-      
-      for (const fallbackPath of fallbackPaths) {
-        console.log('Trying fallback path:', fallbackPath);
-        if (require('fs').existsSync(fallbackPath)) {
-          trayIcon = nativeImage.createFromPath(fallbackPath).resize({ width: 128, height: 128 });
-          console.log('Tray icon loaded from fallback:', fallbackPath);
-          break;
-        }
-      }
-      
-      if (!trayIcon) {
-        throw new Error('Tray icon not found in any location');
-      }
+      throw new Error('Tray icon file not found at: ' + iconPath);
     }
   } catch (error) {
     console.error('Failed to load tray icon:', error);
-    // Create a simple fallback using the traypong.png from development
+    // Create a simple fallback icon
     try {
-      const devIconPath = path.join(__dirname, '../public/img/traypong.png');
-      if (require('fs').existsSync(devIconPath)) {
-        trayIcon = nativeImage.createFromPath(devIconPath).resize({ width: 128, height: 128 });
-        console.log('Using development tray icon as fallback');
-      } else {
-        throw new Error('Development icon not found either');
-      }
-    } catch (devError) {
-      console.error('Failed to load development icon:', devError);
-      // Last resort - create empty icon but continue
+      // Create a simple colored rectangle as fallback
+      const size = 128;
       trayIcon = nativeImage.createEmpty();
-      console.log('Using empty icon - app will continue but tray icon may not be visible');
+      console.log('Using empty fallback icon - app will continue');
+    } catch (fallbackError) {
+      console.error('Failed to create fallback icon:', fallbackError);
+      trayIcon = nativeImage.createEmpty();
     }
   }
 
