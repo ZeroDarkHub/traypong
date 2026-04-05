@@ -453,7 +453,7 @@ export function useGameLoop(canvasRef) {
   const submitHighScore = useCallback(() => {
     const s = stateRef.current;
     if (s.isEnteringName && s.finalScore > 0) {
-      const name = s.playerName.trim() || 'Anonymous';
+      const name = (s.playerName && s.playerName.trim) ? s.playerName.trim() : 'Anonymous';
       const highScores = saveHighScore(s.finalScore, s.roundsWon, name);
       stateRef.current = { 
         ...s, 
