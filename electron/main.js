@@ -6,13 +6,41 @@
 
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen } = require('electron');
 const path = require('path');
+const fs = require('fs');
+
+// Enable live reload for Electron in development
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+// ─── Create log file for debugging ───────────────────────────────────────────────
+const logFile = path.join(require('os').tmpdir(), 'traypong-debug.log');
+function logToFile(message) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}\n`;
+  try {
+    fs.appendFileSync(logFile, logMessage);
+  } catch (e) {
+    console.log('Failed to write to log file:', e.message);
+  }
+}
+
+// Override console.log to also write to file
+const originalConsoleLog = console.log;
+console.log = function(...args) {
+  originalConsoleLog.apply(console, args);
+  logToFile(args.join(' '));
+};
+
+const originalConsoleError = console.error;
+console.error = function(...args) {
+  originalConsoleError.apply(console, args);
+  logToFile('ERROR: ' + args.join(' '));
+};
 
 // Keep global references to prevent GC
 let tray = null;
 let mainWindow = null;
 
 // ─── Dev vs. production URL ───────────────────────────────────────────────────
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const RENDERER_URL = isDev
   ? 'http://localhost:3000'
   : `file://${path.join(__dirname, '../build/index.html')}`;
@@ -29,96 +57,97 @@ function createTray() {
     tray = null;
   }
   
-  // Handle tray icon path differently in dev vs production
-  let iconPath;
-  if (isDev) {
-    // Development: use public folder
-    iconPath = path.join(__dirname, '../public/img/traypong.png');
-  } else {
-    // Production: try multiple paths for asar packaging
-    const possiblePaths = [
-      path.join(process.resourcesPath, 'img/traypong.png'), // extraResources location
-      path.join(__dirname, '../build/img/traypong.png'), // build location
-      path.join(__dirname, '../../build/img/traypong.png'), // asar unpacked location
-      path.join(__dirname, '../../../build/img/traypong.png'), // deeper asar location
-      path.join(__dirname, 'img/traypong.png'), // same directory
-    ];
-    
-    // Find the first path that exists
-    for (const testPath of possiblePaths) {
-      console.log('Testing path:', testPath);
-      try {
-        if (require('fs').existsSync(testPath)) {
-          iconPath = testPath;
-          console.log('Found tray icon at:', iconPath);
-          break;
-        }
-      } catch (e) {
-        console.log('Path test failed:', testPath, e.message);
-      }
-    }
-    
-    // If still not found, use the first one as fallback
-    if (!iconPath) {
-      iconPath = possiblePaths[0];
-      console.log('Using fallback path:', iconPath);
-    }
-  }
+  console.log('=== CREATING TRAY ICON ===');
   
-  console.log('Final tray icon path:', iconPath);
-  console.log('Icon path exists:', require('fs').existsSync(iconPath));
-  console.log('Is dev mode:', isDev);
-  console.log('Current __dirname:', __dirname);
-  console.log('Process resources path:', process.resourcesPath);
-  
+  // Try to load the tray icon with multiple fallbacks
   let trayIcon;
+  let iconLoaded = false;
+  
+  // Method 1: Try resources path
   try {
-    // Try to load the icon from file
-    if (require('fs').existsSync(iconPath)) {
-      trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 128, height: 128 });
-      console.log('Tray icon loaded successfully from:', iconPath);
-    } else {
-      throw new Error('Tray icon file not found at: ' + iconPath);
+    const resourcesPath = path.join(process.resourcesPath, 'img/traypong.png');
+    console.log('Trying resources path:', resourcesPath);
+    if (require('fs').existsSync(resourcesPath)) {
+      trayIcon = nativeImage.createFromPath(resourcesPath).resize({ width: 128, height: 128 });
+      iconLoaded = true;
+      console.log('✅ SUCCESS: Loaded from resources path');
     }
-  } catch (error) {
-    console.error('Failed to load tray icon:', error);
-    // Create a simple fallback icon
+  } catch (e) {
+    console.log('❌ Resources path failed:', e.message);
+  }
+  
+  // Method 2: Try build path
+  if (!iconLoaded) {
     try {
-      // Create a simple colored rectangle as fallback
-      const size = 128;
-      trayIcon = nativeImage.createEmpty();
-      console.log('Using empty fallback icon - app will continue');
-    } catch (fallbackError) {
-      console.error('Failed to create fallback icon:', fallbackError);
-      trayIcon = nativeImage.createEmpty();
+      const buildPath = path.join(__dirname, '../build/img/traypong.png');
+      console.log('Trying build path:', buildPath);
+      if (require('fs').existsSync(buildPath)) {
+        trayIcon = nativeImage.createFromPath(buildPath).resize({ width: 128, height: 128 });
+        iconLoaded = true;
+        console.log('✅ SUCCESS: Loaded from build path');
+      }
+    } catch (e) {
+      console.log('❌ Build path failed:', e.message);
     }
   }
-
+  
+  // Method 3: Try development path
+  if (!iconLoaded) {
+    try {
+      const devPath = path.join(__dirname, '../public/img/traypong.png');
+      console.log('Trying dev path:', devPath);
+      if (require('fs').existsSync(devPath)) {
+        trayIcon = nativeImage.createFromPath(devPath).resize({ width: 128, height: 128 });
+        iconLoaded = true;
+        console.log('✅ SUCCESS: Loaded from dev path');
+      }
+    } catch (e) {
+      console.log('❌ Dev path failed:', e.message);
+    }
+  }
+  
+  // Method 4: Create a simple colored square as fallback
+  if (!iconLoaded) {
+    console.log('⚠️ All paths failed, creating fallback icon');
+    try {
+      // Create a simple purple square using a small base64 image
+      const purpleSquare = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+      trayIcon = nativeImage.createFromDataURL(purpleSquare);
+      iconLoaded = true;
+      console.log('✅ SUCCESS: Created fallback icon');
+    } catch (e) {
+      console.log('❌ Fallback icon failed:', e.message);
+      trayIcon = nativeImage.createEmpty();
+      iconLoaded = true;
+      console.log('✅ SUCCESS: Using empty icon (app will work but icon may not be visible)');
+    }
+  }
+  
+  // Create the tray
   try {
     tray = new Tray(trayIcon);
-    console.log('Tray created successfully');
+    tray.setToolTip('TrayPong');
+    console.log('✅ TRAY CREATED SUCCESSFULLY');
+    
+    tray.on('click', (event, bounds) => {
+      console.log('🖱️ Tray icon clicked');
+      toggleWindow(bounds);
+    });
+    
+    // Right-click context menu
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'TrayPong', enabled: false },
+      { type: 'separator' },
+      { label: 'Quit', click: () => app.quit() },
+    ]);
+    tray.on('right-click', () => {
+      tray.popUpContextMenu(contextMenu);
+    });
+    
   } catch (error) {
-    console.error('Failed to create tray:', error);
-    // Continue without tray - app should still work
-    return;
+    console.error('❌ FAILED TO CREATE TRAY:', error);
+    console.log('⚠️ Continuing without tray - app should still work');
   }
-
-  tray.setToolTip('TrayPong');
-
-  tray.on('click', (event, bounds) => {
-    console.log('Tray icon clicked');
-    toggleWindow(bounds);
-  });
-
-  // Right-click context menu
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'TrayPong', enabled: false },
-    { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() },
-  ]);
-  tray.on('right-click', () => {
-    tray.popUpContextMenu(contextMenu);
-  });
 }
 
 // ─── Create the main BrowserWindow ───────────────────────────────────────────
