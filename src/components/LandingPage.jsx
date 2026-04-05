@@ -64,7 +64,7 @@ const STEPS = [
   {
     num: "4",
     title: "Find it in your menu bar",
-    desc: "That's it. A 🏓 icon appears in your macOS menu bar. Click it anytime to play.",
+    desc: "That's it. The TrayPong icon appears in your macOS menu bar. Click it anytime to play.",
     warn: null,
   },
 ];
