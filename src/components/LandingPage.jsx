@@ -331,10 +331,7 @@ function AppMockup() {
         display: "flex", alignItems: "center", justifyContent: "flex-end",
         gap: 12, width: CW + 40,
       }}>
-        {["Tue 9:41", "WiFi", "🔋"].map(item => (
-          <span key={item} style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Mono', monospace" }}>{item}</span>
-        ))}
-        <span style={{ fontSize: 11, color: "#9966ff", fontWeight: 500, fontFamily: "'DM Mono', monospace" }}>🏓</span>
+        <span style={{ fontSize: 11, color: "#9966ff", fontWeight: 500, fontFamily: "'DM Mono', monospace" }}></span>
       </div>
 
       {/* App window chrome */}
