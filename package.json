@@ -40,6 +40,12 @@
       "public/img/**/*",
       "node_modules/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "public/img",
+        "to": "img"
+      }
+    ],
     "directories": {
       "buildResources": "assets"
     },

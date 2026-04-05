@@ -35,26 +35,58 @@ function createTray() {
     // Development: use public folder
     iconPath = path.join(__dirname, '../public/img/traypong.png');
   } else {
-    // Production: use packaged resources
-    iconPath = path.join(__dirname, '../build/img/traypong.png');
+    // Production: try multiple possible locations for the tray icon
+    const possiblePaths = [
+      path.join(__dirname, '../build/img/traypong.png'),
+      path.join(__dirname, '../../build/img/traypong.png'),
+      path.join(__dirname, '../../../build/img/traypong.png'),
+      path.join(process.resourcesPath, 'img/traypong.png'),
+      path.join(__dirname, 'img/traypong.png')
+    ];
+    
+    // Find the first path that exists
+    iconPath = possiblePaths.find(p => {
+      try {
+        return require('fs').existsSync(p);
+      } catch (e) {
+        return false;
+      }
+    });
+    
+    // If none found, use the first one as fallback
+    if (!iconPath) {
+      iconPath = possiblePaths[0];
+    }
   }
   
   console.log('Loading tray icon from:', iconPath);
   console.log('Icon path exists:', require('fs').existsSync(iconPath));
   console.log('Is dev mode:', isDev);
   console.log('Current __dirname:', __dirname);
+  console.log('Process resources path:', process.resourcesPath);
   
-  const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 128, height: 128 });
+  let trayIcon;
+  try {
+    // Try to load the icon from file
+    if (require('fs').existsSync(iconPath)) {
+      trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 128, height: 128 });
+      console.log('Tray icon loaded from file:', iconPath);
+    } else {
+      throw new Error('Icon file not found');
+    }
+  } catch (error) {
+    console.error('Failed to load tray icon from file:', error);
+    // Fallback: create a simple colored rectangle as tray icon
+    trayIcon = nativeImage.createEmpty();
+    console.log('Using fallback tray icon');
+  }
 
   try {
     tray = new Tray(trayIcon);
-    console.log('Tray icon loaded and resized from:', iconPath);
+    console.log('Tray created successfully');
   } catch (error) {
-    console.error('Failed to load tray icon:', error);
-    // Fallback: create a simple colored rectangle as tray icon
-    const fallbackIcon = nativeImage.createEmpty();
-    tray = new Tray(fallbackIcon);
-    console.log('Using fallback tray icon');
+    console.error('Failed to create tray:', error);
+    return;
   }
 
   tray.setToolTip('TrayPong');
