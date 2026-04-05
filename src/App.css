@@ -49,10 +49,16 @@ html, body, #root {
 .app {
   display: flex;
   flex-direction: column;
-  width: 320px;
-  height: 520px;
+  width: 100%;
+  min-height: 100vh;
   background: var(--color-bg);
   overflow: hidden;
+}
+
+/* Electron-specific sizing */
+.app[data-electron="true"] {
+  width: 320px;
+  height: 520px;
   border-radius: 12px;
   /* Subtle border for when window has no frame */
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
@@ -69,6 +75,7 @@ html, body, #root {
   flex: 1;
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 /* ─── Views ────────────────────────────────────────────────────────────────── */
@@ -77,6 +84,14 @@ html, body, #root {
 .view-landing {
   position: absolute;
   inset: 0;
+}
+
+.view-game {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  height: 100%;
   animation: view-enter 0.18s ease-out;
 }
 
@@ -84,6 +99,12 @@ html, body, #root {
   overflow: auto;
   width: 100vw;
   height: 100vh;
+}
+
+.view-leaderboard {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes view-enter {

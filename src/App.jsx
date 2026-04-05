@@ -92,7 +92,9 @@ export default function App() {
 
         {view === VIEW.GAME && (
           <div className="view-game">
-            <GameCanvas onGameOver={handleGameOver} />
+            <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+              <GameCanvas onGameOver={handleGameOver} />
+            </div>
           </div>
         )}
 
