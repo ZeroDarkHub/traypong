@@ -8,7 +8,7 @@
   background: #0d0d0f;
   margin: 0 auto;
   width: 100%;
-  max-width: 300px;
+  max-width: 400px;
 }
 
 /* ─── Score Bar ────────────────────────────────────────────────────────────── */
@@ -88,7 +88,8 @@
 .rally-badge {
   position: absolute;
   bottom: 8px;
-  right: 12px;
+  left: 45%;
+  transform: translateX(-50%);
   font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
   font-size: 10px;
   font-weight: 600;

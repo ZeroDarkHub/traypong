@@ -192,7 +192,7 @@ export default function GameCanvas({ onGameOver }) {
       if (winner === 'ai') {
         if (isEnteringName) {
           // Show name input screen
-          drawOverlay(ctx, `GAME OVER - ${finalScore} pts (${roundsWon} rounds)`, 'Enter your name:');
+          drawOverlay(ctx, `Game Over - ${finalScore} pts (${roundsWon} rounds)`, 'Enter your name:');
         } else {
           // Show final score and high scores
           const highScoreText = highScores.length > 0 
@@ -219,9 +219,9 @@ export default function GameCanvas({ onGameOver }) {
   // ─── Touch tracking ────────────────────────────────────────────────────────
   const handleTouchMove = useCallback((e) => {
     e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
+    const wrapper = e.currentTarget;
+    if (!wrapper) return;
+    const rect = wrapper.getBoundingClientRect();
     const touch = e.touches[0];
     // Scale touch position to canvas coordinate space
     const scaleX = CANVAS_W / rect.width;
@@ -230,9 +230,9 @@ export default function GameCanvas({ onGameOver }) {
 
   const handleTouchStart = useCallback((e) => {
     e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
+    const wrapper = e.currentTarget;
+    if (!wrapper) return;
+    const rect = wrapper.getBoundingClientRect();
     const touch = e.touches[0];
     const scaleX = CANVAS_W / rect.width;
     updateMouseX((touch.clientX - rect.left) * scaleX);
@@ -298,7 +298,11 @@ export default function GameCanvas({ onGameOver }) {
   }, [renderState.gameState]);
 
   return (
-    <div className="game-canvas-wrapper">
+    <div 
+      className="game-canvas-wrapper"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+    >
       {/* Score bar */}
       <div className="score-bar">
         <div className="score ai-score">
@@ -345,12 +349,7 @@ export default function GameCanvas({ onGameOver }) {
         className="game-canvas"
       />
 
-      {/* Rally indicator */}
-      {renderState.gameState === GAME_STATE.PLAYING && renderState.rallyCount > 3 && (
-        <div className="rally-badge">
-          🔥 {renderState.rallyCount} rally
-        </div>
-      )}
+      {/* Rally indicator removed */}
 
       {/* Name input for high score */}
       {renderState.gameState === GAME_STATE.GAME_OVER && renderState.winner === 'ai' && renderState.isEnteringName && (
@@ -374,16 +373,16 @@ export default function GameCanvas({ onGameOver }) {
               }
             }}
             maxLength={10}
-            placeholder="Enter your name (10 chars max)..."
+            placeholder="Enter your name."
             style={{
               background: 'transparent',
               border: 'none',
               color: '#f0f0ff',
-              fontSize: '12px',
+              fontSize: '16px',
               fontFamily: '"SF Pro Display", "Helvetica Neue", sans-serif',
               textAlign: 'center',
               outline: 'none',
-              width: '140px',
+              width: '200px',
             }}
             autoFocus
           />

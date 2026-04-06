@@ -7,12 +7,12 @@
   "scripts": {
     "start": "BROWSER=chrome react-scripts start",
     "dev": "npm run electron:dev",
-    "build": "react-scripts build && npm run copy-dmg && npm run copy-img",
-    "copy-dmg": "cp dist/TrayPong-*.dmg build/",
+    "build": "react-scripts build",
     "copy-img": "cp -r public/img build/",
     "electron": "electron .",
     "electron:dev": "concurrently \"BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "npm run build && electron-builder --mac",
+    "electron:sign": "npm run build && electron-builder --mac --publish=never && codesign --force --deep --sign - \"TrayPong\" dist/mac-arm64/TrayPong.app",
     "electron:pack": "npm run build && electron-builder --mac --dir"
   },
   "dependencies": {
@@ -29,27 +29,39 @@
   "build": {
     "appId": "com.zerodarkhub.traypong",
     "productName": "TrayPong",
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
     "mac": {
       "category": "public.app-category.games",
-      "target": ["dmg", "zip"]
+      "target": ["dmg", "zip"],
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "files": [
-      "build/**/*",
-      "build/img/**/*",
       "electron/**/*",
-      "public/img/**/*",
       "node_modules/**/*"
     ],
     "extraResources": [
       {
         "from": "public/img",
-        "to": "img"
+        "to": "img",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "build",
+        "to": "build",
+        "filter": ["**/*"]
       }
     ],
     "directories": {
       "buildResources": "assets"
     },
-    "asar": true
+    "asar": true,
+    "asarUnpack": [
+      "public/**/*"
+    ]
   },
   "eslintConfig": {
     "extends": ["react-app"]

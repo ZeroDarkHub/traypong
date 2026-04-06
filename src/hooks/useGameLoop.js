@@ -57,7 +57,7 @@ function saveHighScore(score, roundsWon, playerName = 'Anonymous') {
 
 function getHighScores() {
   try {
-    return JSON.parse(localStorage.getItem('traypong-highscores') || '[]');
+    return JSON.parse(localStorage.getItem('traypong_leaderboard') || '[]');
   } catch (error) {
     console.error('Failed to get high scores:', error);
     return [];
@@ -274,7 +274,7 @@ export function useGameLoop(canvasRef) {
 
       if (aiScore >= AI_WINNING_SCORE) {
         // Trigger name entry when AI wins (don't save score yet)
-        const finalScore = s.totalScore;
+        const finalScore = s.totalScore; // Use total points scored
         const roundsWon = playerScore; // Player's score represents rounds won
         
         stateRef.current = { 
@@ -451,10 +451,15 @@ export function useGameLoop(canvasRef) {
   }, [syncRender]);
 
   const submitHighScore = useCallback(() => {
+    console.log('🔥 submitHighScore called');
     const s = stateRef.current;
+    console.log('Current state:', s);
     if (s.isEnteringName && s.finalScore > 0) {
-      const name = (s.playerName && s.playerName.trim) ? s.playerName.trim() : 'Anonymous';
+      console.log('✅ Conditions met, saving score...');
+      const name = (s.playerName && s.playerName.trim()) ? s.playerName.trim() : 'Anonymous';
+      console.log('Player name:', name);
       const highScores = saveHighScore(s.finalScore, s.roundsWon, name);
+      console.log('Saved high scores:', highScores);
       stateRef.current = { 
         ...s, 
         highScores: highScores, 
@@ -467,8 +472,11 @@ export function useGameLoop(canvasRef) {
         key: 'traypong_leaderboard',
         newValue: localStorage.getItem('traypong_leaderboard')
       }));
+      console.log('✅ Score saved successfully');
+    } else {
+      console.log('❌ Conditions not met:', { isEnteringName: s.isEnteringName, finalScore: s.finalScore });
     }
-  }, [syncRender]);
+  }, [syncRender, stateRef]);
 
   // ─── Start loop on mount ──────────────────────────────────────────────────────
   useEffect(() => {

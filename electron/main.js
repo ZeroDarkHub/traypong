@@ -8,149 +8,97 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen } = require
 const path = require('path');
 const fs = require('fs');
 
-// Enable live reload for Electron in development
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
-// ─── Create log file for debugging ───────────────────────────────────────────────
-const logFile = path.join(require('os').tmpdir(), 'traypong-debug.log');
-function logToFile(message) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] ${message}\n`;
-  try {
-    fs.appendFileSync(logFile, logMessage);
-  } catch (e) {
-    console.log('Failed to write to log file:', e.message);
-  }
-}
-
-// Override console.log to also write to file
-const originalConsoleLog = console.log;
-console.log = function(...args) {
-  originalConsoleLog.apply(console, args);
-  logToFile(args.join(' '));
-};
-
-const originalConsoleError = console.error;
-console.error = function(...args) {
-  originalConsoleError.apply(console, args);
-  logToFile('ERROR: ' + args.join(' '));
-};
-
-// Keep global references to prevent GC
 let tray = null;
 let mainWindow = null;
-
-// ─── Dev vs. production URL ───────────────────────────────────────────────────
-const RENDERER_URL = isDev
-  ? 'http://localhost:3000'
-  : `file://${path.join(__dirname, '../build/index.html')}`;
 
 // ─── Window dimensions ────────────────────────────────────────────────────────
 const WINDOW_WIDTH = 320;
 const WINDOW_HEIGHT = 520;
 
-// ─── Create the tray icon ─────────────────────────────────────────────────────
+// ─── Renderer URL ───────────────────────────────────────────────────────────
+// In production, load from the built files. In development, use dev server.
+function getRendererURL() {
+  if (isDev) {
+    return 'http://localhost:3000';
+  }
+  // Production: load from the build directory inside the app bundle
+  const buildPath = path.join(process.resourcesPath, 'build', 'index.html');
+  return `file://${buildPath}`;
+}
+
+// ─── Tray icon path ───────────────────────────────────────────────────────────
+// In production electron-builder copies extraResources next to the .app bundle.
+// The safest cross-env approach is to try multiple known locations.
+function getTrayIconPath() {
+  console.log('🔍 Looking for tray icon...');
+  console.log('📁 process.resourcesPath:', process.resourcesPath);
+  console.log('📁 app.getAppPath():', app.getAppPath());
+  console.log('📁 __dirname:', __dirname);
+  
+  const candidates = [
+    // Development
+    path.join(__dirname, '../public/img/traypong.png'),
+    // Production — extraResources ends up at <app>.app/Contents/Resources/
+    path.join(process.resourcesPath, 'img', 'traypong.png'),
+    // Fallback inside asar
+    path.join(app.getAppPath(), 'public', 'img', 'traypong.png'),
+    path.join(app.getAppPath(), 'build', 'img', 'traypong.png'),
+  ];
+
+  for (const p of candidates) {
+    try {
+      console.log(`🔍 Checking path: ${p}`);
+      if (fs.existsSync(p)) {
+        console.log('✅ Tray icon found at:', p);
+        return p;
+      }
+    } catch {}
+  }
+
+  console.warn('⚠️  Tray icon not found in any candidate path:', candidates);
+  return null;
+}
+
+// ─── Create the tray ─────────────────────────────────────────────────────────
 function createTray() {
-  // Destroy existing tray if it exists
-  if (tray) {
-    tray.destroy();
-    tray = null;
-  }
-  
-  console.log('=== CREATING TRAY ICON ===');
-  
-  // Try to load the tray icon with multiple fallbacks
-  let trayIcon;
-  let iconLoaded = false;
-  
-  // Method 1: Try resources path
   try {
-    const resourcesPath = path.join(process.resourcesPath, 'img/traypong.png');
-    console.log('Trying resources path:', resourcesPath);
-    if (require('fs').existsSync(resourcesPath)) {
-      trayIcon = nativeImage.createFromPath(resourcesPath).resize({ width: 128, height: 128 });
-      iconLoaded = true;
-      console.log('✅ SUCCESS: Loaded from resources path');
+    if (tray) { tray.destroy(); tray = null; }
+
+    const iconPath = getTrayIconPath();
+    let trayIcon;
+
+    if (iconPath) {
+      // Resize to 160x160 — maximum visibility in menu bar
+      trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 160, height: 160 });
+    } else {
+      // Minimal 1×1 fallback so the app still launches
+      trayIcon = nativeImage.createFromDataURL(
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+      );
     }
-  } catch (e) {
-    console.log('❌ Resources path failed:', e.message);
-  }
-  
-  // Method 2: Try build path
-  if (!iconLoaded) {
-    try {
-      const buildPath = path.join(__dirname, '../build/img/traypong.png');
-      console.log('Trying build path:', buildPath);
-      if (require('fs').existsSync(buildPath)) {
-        trayIcon = nativeImage.createFromPath(buildPath).resize({ width: 128, height: 128 });
-        iconLoaded = true;
-        console.log('✅ SUCCESS: Loaded from build path');
-      }
-    } catch (e) {
-      console.log('❌ Build path failed:', e.message);
-    }
-  }
-  
-  // Method 3: Try development path
-  if (!iconLoaded) {
-    try {
-      const devPath = path.join(__dirname, '../public/img/traypong.png');
-      console.log('Trying dev path:', devPath);
-      if (require('fs').existsSync(devPath)) {
-        trayIcon = nativeImage.createFromPath(devPath).resize({ width: 128, height: 128 });
-        iconLoaded = true;
-        console.log('✅ SUCCESS: Loaded from dev path');
-      }
-    } catch (e) {
-      console.log('❌ Dev path failed:', e.message);
-    }
-  }
-  
-  // Method 4: Create a simple colored square as fallback
-  if (!iconLoaded) {
-    console.log('⚠️ All paths failed, creating fallback icon');
-    try {
-      // Create a simple purple square using a small base64 image
-      const purpleSquare = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-      trayIcon = nativeImage.createFromDataURL(purpleSquare);
-      iconLoaded = true;
-      console.log('✅ SUCCESS: Created fallback icon');
-    } catch (e) {
-      console.log('❌ Fallback icon failed:', e.message);
-      trayIcon = nativeImage.createEmpty();
-      iconLoaded = true;
-      console.log('✅ SUCCESS: Using empty icon (app will work but icon may not be visible)');
-    }
-  }
-  
-  // Create the tray
-  try {
+
     tray = new Tray(trayIcon);
     tray.setToolTip('TrayPong');
-    console.log('✅ TRAY CREATED SUCCESSFULLY');
-    
-    tray.on('click', (event, bounds) => {
-      console.log('🖱️ Tray icon clicked');
-      toggleWindow(bounds);
-    });
-    
-    // Right-click context menu
-    const contextMenu = Menu.buildFromTemplate([
-      { label: 'TrayPong', enabled: false },
-      { type: 'separator' },
-      { label: 'Quit', click: () => app.quit() },
-    ]);
+
+    tray.on('click', (_event, bounds) => toggleWindow(bounds));
+
     tray.on('right-click', () => {
-      tray.popUpContextMenu(contextMenu);
+      tray.popUpContextMenu(Menu.buildFromTemplate([
+        { label: 'TrayPong', enabled: false },
+        { type: 'separator' },
+        { label: 'Quit', click: () => app.quit() },
+      ]));
     });
-    
-  } catch (error) {
-    console.error('❌ FAILED TO CREATE TRAY:', error);
-    console.log('⚠️ Continuing without tray - app should still work');
+
+    console.log('✅ Tray created');
+  } catch (err) {
+    console.error('❌ createTray failed:', err);
   }
 }
 
-// ─── Create the main BrowserWindow ───────────────────────────────────────────
+// ─── Create the BrowserWindow ─────────────────────────────────────────────────
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: WINDOW_WIDTH,
@@ -159,49 +107,33 @@ function createWindow() {
     frame: false,
     resizable: false,
     movable: false,
-    alwaysOnTop: true,
     skipTaskbar: true,
+    alwaysOnTop: true,
     hasShadow: true,
-    transparent: false,
     backgroundColor: '#0d0d0f',
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
-  mainWindow.loadURL(RENDERER_URL);
+  mainWindow.loadURL(getRendererURL());
 
-  // Pause game when focus is lost, but don't hide window
+  // Hide + notify renderer to pause when window loses focus
   mainWindow.on('blur', () => {
-    if (mainWindow && mainWindow.isVisible()) {
-      // Notify renderer to pause game only
+    if (mainWindow?.isVisible()) {
+      mainWindow.hide();
       mainWindow.webContents.send('window-hidden');
     }
   });
 
-  // Resume game when focus is regained
-  mainWindow.on('focus', () => {
-    if (mainWindow && mainWindow.isVisible()) {
-      // Notify renderer to resume game
-      mainWindow.webContents.send('window-shown');
-    }
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
-  // DevTools disabled for production
-  // if (isDev) {
-  //   mainWindow.webContents.openDevTools({ mode: 'detach' });
-  // }
+  mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-// ─── Toggle window visibility near the tray icon ─────────────────────────────
+// ─── Toggle window near tray icon ─────────────────────────────────────────────
 function toggleWindow(trayBounds) {
-  if (!mainWindow) return;
+  if (!mainWindow) createWindow();
 
   if (mainWindow.isVisible()) {
     mainWindow.hide();
@@ -215,20 +147,19 @@ function toggleWindow(trayBounds) {
   mainWindow.webContents.send('window-shown');
 }
 
-// ─── Position the window below (or above) the tray icon ──────────────────────
+// ─── Position window below the tray icon (macOS menu bar is at the top) ───────
 function positionWindow(trayBounds) {
-  const display = screen.getPrimaryDisplay();
-  const { width: screenWidth, height: screenHeight } = display.workAreaSize;
-  const { x: trayX, y: trayY, width: trayWidth, height: trayHeight } = trayBounds;
+  const display = screen.getDisplayNearestPoint({ x: trayBounds.x, y: trayBounds.y });
+  const { workArea } = display;
 
   // Center horizontally on the tray icon
-  let x = Math.round(trayX + trayWidth / 2 - WINDOW_WIDTH / 2);
-  // Position below tray icon (macOS menu bar is at top)
-  let y = Math.round(trayY + trayHeight + 4);
+  let x = Math.round(trayBounds.x + trayBounds.width / 2 - WINDOW_WIDTH / 2);
+  // Place just below the menu bar
+  let y = Math.round(trayBounds.y + trayBounds.height + 4);
 
-  // Keep within screen bounds
-  x = Math.max(0, Math.min(x, screenWidth - WINDOW_WIDTH));
-  y = Math.max(0, Math.min(y, screenHeight - WINDOW_HEIGHT));
+  // Clamp so the window never goes off-screen
+  x = Math.max(workArea.x, Math.min(x, workArea.x + workArea.width - WINDOW_WIDTH));
+  y = Math.max(workArea.y, Math.min(y, workArea.y + workArea.height - WINDOW_HEIGHT));
 
   mainWindow.setPosition(x, y, false);
 }
@@ -238,23 +169,41 @@ ipcMain.on('close-window', () => {
   if (mainWindow) mainWindow.hide();
 });
 
-ipcMain.on('resize-window', (event, { width, height }) => {
-  if (mainWindow) mainWindow.setSize(width, height);
-});
-
 // ─── App lifecycle ────────────────────────────────────────────────────────────
-app.whenReady().then(() => {
-  // Required for macOS: hide dock icon so app lives only in menu bar
-  if (app.dock) app.dock.hide();
-
-  createTray();
-  createWindow();
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
 });
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+app.whenReady().then(() => {
+  console.log('🚀 App starting...');
+  
+  // Hide dock icon — this is a menu bar only app
+  if (app.dock) app.dock.hide();
+  
+  try {
+    createWindow();
+    console.log('✅ Window created');
+    
+    createTray();
+    console.log('✅ Tray created');
+    
+    console.log('🎉 App ready successfully!');
+  } catch (error) {
+    console.error('💥 Error during startup:', error);
+    console.error('Stack:', error.stack);
+  }
+});
+
+// Keep the app alive when all windows are closed (tray app behaviour)
 app.on('window-all-closed', () => {
-  // Don't quit when all windows are closed — tray app stays alive
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
-  if (!mainWindow) createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
