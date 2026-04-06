@@ -319,17 +319,17 @@ export default function GameCanvas({ onGameOver }) {
       {/* Enhanced scoring display */}
       <div className="enhanced-score">
         <div className="combo-display">
-          <span style={{ color: COLORS.combo, fontSize: '12px', fontWeight: 'bold' }}>
+          <span style={{ color: COLORS.combo, fontSize: '16px', fontWeight: 'bold' }}>
             COMBO x{renderState.comboCount || 0}
           </span>
         </div>
         <div className="multiplier-display">
-          <span style={{ color: COLORS.multiplier, fontSize: '12px', fontWeight: 'bold' }}>
+          <span style={{ color: COLORS.multiplier, fontSize: '16px', fontWeight: 'bold' }}>
             {renderState.multiplier || 1}x
           </span>
         </div>
         <div className="total-score-display">
-          <span style={{ color: COLORS.scoreText, fontSize: '14px', fontWeight: 'bold' }}>
+          <span style={{ color: COLORS.scoreText, fontSize: '16px', fontWeight: 'bold' }}>
             SCORE: {renderState.totalScore || 0}
           </span>
         </div>

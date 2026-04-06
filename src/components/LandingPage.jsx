@@ -496,7 +496,7 @@ export default function TrayPongLanding({ onStartGame }) {
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Download for macOS
             </a>
-            <span style={{ fontSize: 10, letterSpacing: "0.1em", color: "#55556a", textTransform: "uppercase" }}>Free · macOS 12+</span>
+            <span style={{ fontSize: 10, letterSpacing: "0.1em", color: "#55556a", textTransform: "uppercase" }}>One Click Away in Your Menu Bar</span>
           </div>
         </Reveal>
       </section>
