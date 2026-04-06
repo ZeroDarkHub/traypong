@@ -272,10 +272,10 @@ function AppMockup() {
         display: "flex", alignItems: "center", justifyContent: "flex-end",
         gap: 12, width: CW + 40,
       }}>
-        {["Tue 9:41", "WiFi", "🔋"].map(item => (
+        {["", "", ""].map(item => (
           <span key={item} style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Mono', monospace" }}>{item}</span>
         ))}
-        <span style={{ fontSize: 11, color: "#9966ff", fontWeight: 500, fontFamily: "'DM Mono', monospace" }}>🏓</span>
+        <span style={{ fontSize: 11, color: "#9966ff", fontWeight: 500, fontFamily: "'DM Mono', monospace" }}></span>
       </div>
       {/* App window */}
       <div style={{
@@ -288,7 +288,7 @@ function AppMockup() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px 6px", borderBottom: "1px solid #1a1a22", background: "#0d0d0f" }}>
           <span style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9966ff", fontFamily: "'DM Mono', monospace" }}>TRAY PONG</span>
           <div style={{ display: "flex", gap: 4 }}>
-            {["🔈", "🏆", "✕"].map(c => <span key={c} style={{ fontSize: 13, color: "#44444f" }}>{c}</span>)}
+            {["🔈", "🏆", ].map(c => <span key={c} style={{ fontSize: 13, color: "#44444f" }}>{c}</span>)}
           </div>
         </div>
         {/* Score bar */}
@@ -432,7 +432,7 @@ export default function TrayPongLanding({ onStartGame }) {
         </Reveal>
         <Reveal delay={0.05}>
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(32px, 6vw, 56px)", fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", marginBottom: "clamp(40px, 6vw, 64px)" }}>
-            Crafted for <em style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontWeight: 400, color: "#55556a" }}>feel,</em><br />not features.
+            Crafted for <em style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontWeight: 400, color: "#55556a" }}>feel,</em><br /> You'll Love it!
           </h2>
         </Reveal>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "clamp(16px, 4vw, 24px)" }}>
