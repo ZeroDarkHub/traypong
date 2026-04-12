@@ -4,11 +4,12 @@
  * Orchestrates GameCanvas, UIOverlay, and Leaderboard with view transitions.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import GameCanvas from './components/GameCanvas/GameCanvas';
 import Leaderboard from './components/Leaderboard/Leaderboard';
 import UIOverlay from './components/UIOverlay/UIOverlay';
 import LandingPage from './components/LandingPage';
+import SecurityPolicy from './components/SecurityPolicy';
 import './App.css';
 
 // Views
@@ -16,6 +17,7 @@ const VIEW = {
   LANDING: 'landing',
   GAME: 'game',
   LEADERBOARD: 'leaderboard',
+  SECURITY: 'security',
 };
 
 export default function App() {
@@ -27,6 +29,25 @@ export default function App() {
   const [winner, setWinner] = useState(null);
   const [savedRank, setSavedRank] = useState(null);
   const [savedScore, setSavedScore] = useState(null);
+
+  // Handle hash-based routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Remove # from hash
+      if (hash && hash !== view) {
+        setView(hash);
+      }
+    };
+
+    // Initial hash check
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [view]);
 
   const handleGameOver = useCallback((score, gameWinner) => {
     setPlayerScore(score);
@@ -70,9 +91,9 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app" data-view={view}>
-      {/* Only show UIOverlay when not on landing page */}
-      {view !== VIEW.LANDING && (
+    <div className="app" data-view={view} data-electron={isElectron ? "true" : "false"}>
+      {/* Only show UIOverlay when not on landing or security page */}
+      {view !== VIEW.LANDING && view !== VIEW.SECURITY && (
         <UIOverlay
           onShowLeaderboard={handleShowLeaderboard}
           gameOver={gameOver}
@@ -105,6 +126,12 @@ export default function App() {
               highlightScore={savedScore}
               onClose={handleBackToGame}
             />
+          </div>
+        )}
+
+        {view === VIEW.SECURITY && (
+          <div className="view-security">
+            <SecurityPolicy />
           </div>
         )}
       </div>

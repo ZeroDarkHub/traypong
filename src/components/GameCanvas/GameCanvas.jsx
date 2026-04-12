@@ -180,7 +180,7 @@ export default function GameCanvas({ onGameOver }) {
     // ── Overlays ────────────────────────────────────────────────────────────
     if (gameState === GAME_STATE.IDLE) {
       const isTouchDevice = 'ontouchstart' in window;
-      drawOverlay(ctx, 'TRAY PONG', isTouchDevice ? 'Tap to play' : 'Click to play');
+      drawOverlay(ctx, 'TRAY PONG', isTouchDevice ? 'Tap to play' : 'Click to Play');
     } else if (gameState === GAME_STATE.PAUSED) {
       drawOverlay(ctx, 'PAUSED', 'Click to resume');
     } else if (gameState === GAME_STATE.SCORED) {
@@ -201,7 +201,7 @@ export default function GameCanvas({ onGameOver }) {
           drawOverlay(ctx, `Score saved! ${finalScore} pts`, highScoreText);
         }
       } else {
-        drawOverlay(ctx, '🏆 YOU WIN!', 'Click to play again');
+        drawOverlay(ctx, '🏆 YOU WIN!', 'Click to Play again');
       }
     }
 

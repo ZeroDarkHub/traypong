@@ -39,36 +39,6 @@ const FEATURES = [
   },
 ];
 
-const STEPS = [
-  {
-    num: "1",
-    title: "Download the .dmg",
-    desc: "Click the download button and save TrayPong.dmg to your Mac.",
-    warn: null,
-  },
-  {
-    num: "2",
-    title: "Open and drag to Applications",
-    desc: "Double-click the .dmg, then drag TrayPong into your Applications folder.",
-    warn: null,
-  },
-  {
-    num: "3",
-    title: "First launch — bypass Gatekeeper",
-    desc: "Because TrayPong isn't signed by Apple, macOS will block it on first open. Right-click the app in Applications and choose Open, then confirm. You'll only see this once.",
-    warn: {
-      label: "If right-click doesn't work",
-      detail: "Go to System Settings → Privacy & Security → scroll down and click Open Anyway next to TrayPong.",
-    },
-  },
-  {
-    num: "4",
-    title: "Find it in your menu bar",
-    desc: "That's it. The TrayPong icon appears in your macOS menu bar. Click it anytime to play.",
-    warn: null,
-  },
-];
-
 // ── Reveal on scroll ──────────────────────────────────────────────────────────
 function useReveal() {
   const ref = useRef(null);
@@ -342,6 +312,94 @@ function FeatureCard({ icon, title, desc, tag }) {
 
 // ── Main landing page ─────────────────────────────────────────────────────────
 export default function TrayPongLanding({ onStartGame }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const STEPS = [
+    {
+      num: "1",
+      title: "Download the .dmg",
+      desc: "Click the download button and save TrayPong.dmg to your Mac.",
+      warn: null,
+    },
+    {
+      num: "2",
+      title: "Open and drag to Applications",
+      desc: "Double-click the .dmg, then drag TrayPong into your Applications folder.",
+      warn: null,
+    },
+    {
+      num: "3",
+      title: "First launch - bypass Gatekeeper",
+      desc: (
+        <>
+          Because TrayPong isn't signed by Apple, macOS will block it on first open. Right-click the app in Applications and choose Open, then confirm. You'll only see this once.
+          <br /><br />
+          <strong>For newer macOS versions (Tahoe and later):</strong> You may need to run this command in Terminal:
+          <div 
+            onClick={() => { 
+              navigator.clipboard.writeText("xattr -r -d com.apple.quarantine /Applications/TrayPong.app");
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            style={{ 
+              backgroundColor: copied ? "rgba(34, 197, 94, 0.1)" : "rgba(255, 215, 0, 0.1)", 
+              padding: "12px 16px", 
+              borderRadius: "6px", 
+              fontFamily: "'SF Mono', monospace", 
+              fontSize: 13, 
+              color: copied ? "#22c55e" : "#FFD700",
+              margin: "12px 0",
+              border: copied ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(255, 215, 0, 0.2)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between"
+            }}
+            onMouseEnter={e => { 
+              if (!copied) {
+                e.currentTarget.style.backgroundColor = "rgba(255, 215, 0, 0.15)"; 
+                e.currentTarget.style.borderColor = "rgba(255, 215, 0, 0.4)"; 
+              }
+            }}
+            onMouseLeave={e => { 
+              if (!copied) {
+                e.currentTarget.style.backgroundColor = "rgba(255, 215, 0, 0.1)"; 
+                e.currentTarget.style.borderColor = "rgba(255, 215, 0, 0.2)"; 
+              }
+            }}
+            title={copied ? "Copied!" : "Click to copy"}
+          >
+            <span>xattr -r -d com.apple.quarantine /Applications/TrayPong.app</span>
+            {copied ? (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: "#22c55e" }}>
+                <path d="M13.5 4.5L6 12l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: "rgba(255, 215, 0, 0.7)" }}>
+                <path d="M5 3.5v-1a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5h-1v1a.5.5 0 0 0 .5.5h1a1.5 1.5 0 0 0 1.5-1.5v-10a1.5 1.5 0 0 0-1.5-1.5h-8a1.5 1.5 0 0 0-1.5 1.5v1z" stroke="currentColor" strokeWidth="1" fill="currentColor"/>
+                <path d="M2.5 3h11a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5z" stroke="currentColor" strokeWidth="1" fill="none"/>
+              </svg>
+            )}
+          </div>
+          <strong>For macOS Sonoma and earlier:</strong> The right-click method above should work fine.
+        </>
+      ),
+      warn: {
+        label: "If right-click doesn't work",
+        detail: "Go to System Settings (or System Preferences) > Privacy & Security > scroll down and click 'Open Anyway' next to TrayPong.",
+      },
+    },
+    {
+      num: "4",
+      title: "Find it in your menu bar",
+      desc: "That's it. The TrayPong icon appears in your macOS menu bar. Click it anytime to play.",
+      warn: null,
+    },
+  ];
+
   return (
     <div style={{ background: "#080810", color: "#f0f0fa", fontFamily: "'DM Mono', monospace", WebkitFontSmoothing: "antialiased", position: "relative", overflowX: "hidden" }}>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -353,34 +411,96 @@ export default function TrayPongLanding({ onStartGame }) {
         @keyframes paddlePlayer { 0%,100%{transform:translateX(-50%) translateX(40px)} 50%{transform:translateX(-50%) translateX(-80px)} }
         @keyframes ballFloat { 0%{transform:translate(-50%,-50%) translate(-80px,80px)} 25%{transform:translate(-50%,-50%) translate(80px,-80px)} 50%{transform:translate(-50%,-50%) translate(-40px,60px)} 75%{transform:translate(-50%,-50%) translate(60px,-60px)} 100%{transform:translate(-50%,-50%) translate(-80px,80px)} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes menuSlide { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
         * { cursor: default; }
         a, button { cursor: pointer; }
+        .nav-links { display: flex; gap: clamp(16px, 4vw, 32px); align-items: center; flex-wrap: wrap; }
+        .hamburger { display: none; flex-direction: column; justify-content: center; gap: 5px; background: none; border: none; padding: 4px; cursor: pointer; }
+        .hamburger span { display: block; width: 22px; height: 2px; background: #f0f0fa; border-radius: 2px; transition: all 0.25s ease; transform-origin: center; }
+        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+        .mobile-menu { display: none; }
+        @media (max-width: 640px) {
+          .nav-links { display: none; }
+          .hamburger { display: flex; }
+          .mobile-menu {
+            display: flex; flex-direction: column; gap: 0;
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: rgba(8,8,16,0.98); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            animation: menuSlide 0.2s ease;
+            z-index: 99;
+          }
+          .mobile-menu a, .mobile-menu button {
+            display: block; width: 100%; text-align: left;
+            padding: 16px clamp(20px, 5vw, 48px);
+            font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+            color: #55556a; text-decoration: none; background: none; border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-family: 'DM Mono', monospace;
+            transition: color 0.2s, background 0.2s;
+          }
+          .mobile-menu a:hover, .mobile-menu button:hover { color: #f0f0fa; background: rgba(255,255,255,0.03); }
+          .mobile-menu .menu-play { color: #9966ff; }
+          .mobile-menu .menu-play:hover { color: #c299ff; }
+          .mobile-menu .menu-donate { color: #4ade80; }
+          .mobile-menu .menu-donate:hover { color: #86efac; }
+        }
       `}</style>
 
       {/* Scanline overlay */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 998, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)" }} />
 
-      {/* ── Nav ── */}
-      <nav style={{ position: "sticky", top: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "clamp(16px, 4vw, 20px) clamp(20px, 5vw, 48px)", background: "linear-gradient(to bottom, rgba(8,8,16,0.97), rgba(8,8,16,0.85))", backdropFilter: "blur(8px)", zIndex: 100, borderBottom: "1px solid rgba(255,255,255,0.04)", flexWrap: "wrap", gap: 16 }}>
-        <a href="#" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(14px, 3.5vw, 16px)", fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa", textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-          TRAYPONG
-        </a>
-        <div style={{ display: "flex", gap: "clamp(16px, 4vw, 32px)", alignItems: "center", flexWrap: "wrap" }}>
-          {[["#features", "Features"], ["#howto", "How to Install"]].map(([href, label]) => (
-            <a key={href} href={href} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", transition: "color 0.2s" }}
-              onMouseEnter={e => e.target.style.color = "#f0f0fa"}
-              onMouseLeave={e => e.target.style.color = "#55556a"}
-            >{label}</a>
-          ))}
-          <button onClick={onStartGame} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9966ff", background: "rgba(153,102,255,0.1)", border: "1px solid rgba(153,102,255,0.25)", borderRadius: 6, padding: "6px 14px", fontFamily: "'DM Mono', monospace", transition: "background 0.2s, color 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(153,102,255,0.2)"; e.currentTarget.style.color = "#c299ff"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(153,102,255,0.1)"; e.currentTarget.style.color = "#9966ff"; }}
-          >Play Demo</button>
-        </div>
-      </nav>
+      {/* ── Header/Navigation ── */}
+      <header style={{ position: "fixed", top: 0, left: 0, right: 0, background: "linear-gradient(to bottom, rgba(8,8,16,0.98), rgba(8,8,16,0.95))", backdropFilter: "blur(12px)", zIndex: 1000, borderBottom: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 2px 20px rgba(0,0,0,0.3)" }} role="navigation" aria-label="Main navigation">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "clamp(16px, 4vw, 20px) clamp(20px, 5vw, 48px)" }}>
+          <a href="#" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(14px, 3.5vw, 16px)", fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa", textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }} aria-label="TrayPong home">
+            TRAYPONG
+          </a>
 
-      {/* ── Hero ── */}
-      <section style={{ minHeight: "92vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "clamp(60px, 8vh, 80px) clamp(16px, 4vw, 24px) clamp(40px, 6vh, 60px)", position: "relative", overflow: "hidden" }}>
+          {/* Desktop nav links */}
+          <div className="nav-links">
+            {[["#features", "Features"], ["#howto", "How to Install"]].map(([href, label]) => (
+              <a key={href} href={href} onClick={(e) => { e.preventDefault(); document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }); }} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#55556a", textDecoration: "none", transition: "color 0.2s" }}
+                onMouseEnter={e => e.target.style.color = "#f0f0fa"}
+                onMouseLeave={e => e.target.style.color = "#55556a"}
+              >{label}</a>
+            ))}
+            <button onClick={onStartGame} style={{ fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9966ff", background: "rgba(153,102,255,0.1)", border: "1px solid rgba(153,102,255,0.25)", borderRadius: 6, padding: "6px 14px", fontFamily: "'DM Mono', monospace", transition: "background 0.2s, color 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(153,102,255,0.2)"; e.currentTarget.style.color = "#c299ff"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(153,102,255,0.1)"; e.currentTarget.style.color = "#9966ff"; }}
+            >Play Demo</button>
+            <a href="https://buymeacoffee.com/netwoke" target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "clamp(10px, 2.5vw, 11px)", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4ade80", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 6, padding: "6px 14px", fontFamily: "'DM Mono', monospace", textDecoration: "none", transition: "background 0.2s, color 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(74,222,128,0.16)"; e.currentTarget.style.color = "#86efac"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(74,222,128,0.08)"; e.currentTarget.style.color = "#4ade80"; }}
+            >Fuel My Creativity</a>
+          </div>
+
+          {/* Hamburger button — mobile only */}
+          <button
+            className={`hamburger ${menuOpen ? "open" : ""}`}
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+          >
+            <span /><span /><span />
+          </button>
+        </div>
+
+        {/* Mobile dropdown */}
+        {menuOpen && (
+          <div className="mobile-menu" role="menu">
+            <a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }); setMenuOpen(false); }}>Features</a>
+            <a href="#howto" onClick={(e) => { e.preventDefault(); document.getElementById('howto')?.scrollIntoView({ behavior: 'smooth' }); setMenuOpen(false); }}>How to Install</a>
+            <button className="menu-play" onClick={() => { setMenuOpen(false); onStartGame(); }}>Play Demo</button>
+            <a className="menu-donate" href="https://buymeacoffee.com/netwoke" target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>Fuel My Creativity</a>
+          </div>
+        )}
+      </header>
+
+      {/* ── Hero Section ── */}
+      <section style={{ minHeight: "92vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "clamp(80px, 8vh, 120px) clamp(16px, 4vw, 24px) clamp(40px, 6vh, 60px)", position: "relative", overflow: "hidden" }} role="main" aria-label="TrayPong hero section">
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "linear-gradient(to bottom, transparent, rgba(153,102,255,0.12) 20%, rgba(153,102,255,0.12) 80%, transparent)" }} />
           <div style={{ position: "absolute", left: "50%", top: "20%", height: "60%", width: 1, background: "repeating-linear-gradient(to bottom, rgba(153,102,255,0.2) 0, rgba(153,102,255,0.2) 6px, transparent 6px, transparent 12px)" }} />
@@ -401,14 +521,11 @@ export default function TrayPongLanding({ onStartGame }) {
             Classic Pong, always one click away in your menu bar.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "clamp(12px, 3vw, 16px)", justifyContent: "center", flexWrap: "wrap", animation: "fadeUp 0.8s 0.3s ease both" }}>
-            <a href="https://github.com/ZeroDarkHub/traypong/releases/download/v1.0.0/TrayPong-1.0.0-arm64.dmg" download style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#9966ff", color: "#fff", fontFamily: "'DM Mono', monospace", fontSize: "clamp(12px, 3vw, 13px)", fontWeight: 500, letterSpacing: "0.04em", padding: "clamp(12px, 3vw, 14px) clamp(24px, 6vw, 28px)", borderRadius: 6, textDecoration: "none", transition: "background 0.2s, transform 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#aa77ff"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#9966ff"; e.currentTarget.style.transform = "none"; }}
-            >
+            <a href="https://github.com/ZeroDarkHub/traypong/releases/download/v1.0.0/TrayPong-1.0.0-arm64.dmg" download style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#9966ff", color: "#fff", fontFamily: "'DM Mono', monospace", fontSize: "clamp(12px, 3vw, 13px)", fontWeight: 500, letterSpacing: "0.04em", padding: "clamp(12px, 3vw, 14px) clamp(24px, 6vw, 28px)", borderRadius: 6, textDecoration: "none", transition: "background 0.2s, transform 0.15s" }} aria-label="Download TrayPong for macOS">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Download for macOS
+              FREE for macOS
             </a>
-            <button onClick={onStartGame} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "#55556a", fontFamily: "'DM Mono', monospace", fontSize: "clamp(11px, 2.8vw, 12px)", letterSpacing: "0.04em", padding: "clamp(12px, 3vw, 14px) clamp(16px, 4vw, 20px)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.07)", transition: "color 0.2s, border-color 0.2s" }}
+            <button onClick={onStartGame} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "#55556a", fontFamily: "'DM Mono', monospace", fontSize: "clamp(11px, 2.8vw, 12px)", letterSpacing: "0.04em", padding: "clamp(12px, 3vw, 14px) clamp(16px, 4vw, 20px)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.07)", transition: "color 0.2s, border-color 0.2s" }} aria-label="Play TrayPong demo"
               onMouseEnter={e => { e.currentTarget.style.color = "#f0f0fa"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
               onMouseLeave={e => { e.currentTarget.style.color = "#55556a"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
             >
@@ -426,7 +543,7 @@ export default function TrayPongLanding({ onStartGame }) {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" style={{ padding: "clamp(60px, 8vh, 80px) clamp(24px, 5vw, 48px) clamp(80px, 10vh, 100px)", maxWidth: 1100, margin: "0 auto" }}>
+      <section id="features" style={{ paddingTop: "80px", padding: "80px clamp(24px, 5vw, 48px) clamp(80px, 10vh, 100px)", maxWidth: 1100, margin: "0 auto" }}>
         <Reveal>
           <p style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9966ff", marginBottom: 16 }}>What's inside</p>
         </Reveal>
@@ -445,7 +562,7 @@ export default function TrayPongLanding({ onStartGame }) {
       </section>
 
       {/* ── How To Install ── */}
-      <section id="howto" style={{ padding: "clamp(60px, 8vh, 60px) clamp(24px, 5vw, 48px) clamp(80px, 10vh, 100px)", maxWidth: 900, margin: "0 auto" }}>
+      <section id="howto" style={{ paddingTop: "80px", padding: "80px clamp(24px, 5vw, 48px) clamp(80px, 10vh, 100px)", maxWidth: 900, margin: "0 auto" }}>
         <Reveal>
           <p style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9966ff", marginBottom: 16 }}>Get playing in 60 seconds</p>
         </Reveal>
@@ -505,8 +622,24 @@ export default function TrayPongLanding({ onStartGame }) {
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "clamp(24px, 5vw, 32px) clamp(24px, 5vw, 48px)", display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: "clamp(16px, 3vw, 20px)" }}>
         <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 13, color: "#f0f0fa" }}>TRAYPONG</span>
         <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: 13, color: "#9966ff" }}>
-          © {new Date().getFullYear()} TrayPong · Your menu bar has been too boring for too long
+          &copy; {new Date().getFullYear()} TrayPong &middot; Your menu bar has been too boring for too long
         </span>
+        <a 
+          href="#security" 
+          onClick={(e) => { e.preventDefault(); window.location.hash = 'security'; }}
+          style={{ 
+            fontFamily: "'Instrument Serif', serif", 
+            fontStyle: "italic", 
+            fontSize: 13, 
+            color: "#f0f0fa", 
+            textDecoration: "none",
+            transition: "color 0.2s"
+          }}
+          onMouseEnter={e => e.target.style.color = "#ffffff"}
+          onMouseLeave={e => e.target.style.color = "#f0f0fa"}
+        >
+          Security Policy
+        </a>
       </footer>
     </div>
   );
