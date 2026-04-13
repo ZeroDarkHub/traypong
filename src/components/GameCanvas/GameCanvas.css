@@ -16,7 +16,7 @@
   /* No border, just glow effect */
   border: none;
   border-radius: 8px;
-  /* Enhanced glow effect with multiple layers */
+  /* Random color-changing glow effect with multiple layers */
   box-shadow: 
     0 0 10px rgba(153, 102, 255, 0.5),
     0 0 20px rgba(153, 102, 255, 0.4),
@@ -24,8 +24,51 @@
     0 0 40px rgba(153, 102, 255, 0.2),
     inset 0 0 20px rgba(153, 102, 255, 0.1);
   margin: 30px 10px 10px 10px; /* Increased top margin to move it down */
-  /* Add subtle animation to the glow */
-  animation: glow-pulse 3s ease-in-out infinite alternate;
+  /* Add random color-changing animation to the glow */
+  animation: random-glow 4s ease-in-out infinite;
+}
+
+@keyframes random-glow {
+  0% {
+    box-shadow: 
+      0 0 10px rgba(153, 102, 255, 0.5),
+      0 0 20px rgba(153, 102, 255, 0.4),
+      0 0 30px rgba(153, 102, 255, 0.3),
+      0 0 40px rgba(153, 102, 255, 0.2),
+      inset 0 0 20px rgba(153, 102, 255, 0.1);
+  }
+  25% {
+    box-shadow: 
+      0 0 10px rgba(255, 102, 153, 0.5),
+      0 0 20px rgba(255, 102, 153, 0.4),
+      0 0 30px rgba(255, 102, 153, 0.3),
+      0 0 40px rgba(255, 102, 153, 0.2),
+      inset 0 0 20px rgba(255, 102, 153, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 10px rgba(102, 255, 153, 0.5),
+      0 0 20px rgba(102, 255, 153, 0.4),
+      0 0 30px rgba(102, 255, 153, 0.3),
+      0 0 40px rgba(102, 255, 153, 0.2),
+      inset 0 0 20px rgba(102, 255, 153, 0.1);
+  }
+  75% {
+    box-shadow: 
+      0 0 10px rgba(102, 153, 255, 0.5),
+      0 0 20px rgba(102, 153, 255, 0.4),
+      0 0 30px rgba(102, 153, 255, 0.3),
+      0 0 40px rgba(102, 153, 255, 0.2),
+      inset 0 0 20px rgba(102, 153, 255, 0.1);
+  }
+  100% {
+    box-shadow: 
+      0 0 10px rgba(153, 102, 255, 0.5),
+      0 0 20px rgba(153, 102, 255, 0.4),
+      0 0 30px rgba(153, 102, 255, 0.3),
+      0 0 40px rgba(153, 102, 255, 0.2),
+      inset 0 0 20px rgba(153, 102, 255, 0.1);
+  }
 }
 
 @keyframes glow-pulse {

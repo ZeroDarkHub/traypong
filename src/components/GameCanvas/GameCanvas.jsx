@@ -177,10 +177,10 @@ export default function GameCanvas({ onGameOver }) {
       drawBall(ctx, ball);
     }
 
-    // ── Overlays ────────────────────────────────────────────────────────────
+    // ── Overlays ────────────────────────────────────────────────────
     if (gameState === GAME_STATE.IDLE) {
       const isTouchDevice = 'ontouchstart' in window;
-      drawOverlay(ctx, 'TRAY PONG', isTouchDevice ? 'Tap to play' : 'Click to Play');
+      drawOverlay(ctx, 'TRAYPONG', isTouchDevice ? 'Tap to play' : 'Click to Play');
     } else if (gameState === GAME_STATE.PAUSED) {
       drawOverlay(ctx, 'PAUSED', 'Click to resume');
     } else if (gameState === GAME_STATE.SCORED) {

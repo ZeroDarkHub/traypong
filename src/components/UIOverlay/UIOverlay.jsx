@@ -76,7 +76,7 @@ export default function UIOverlay({
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div className="ui-overlay">
         <div className="ui-left">
-          <span className="app-name">TRAY PONG</span>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa" }}>TRAYPONG</span>
         </div>
 
         <div className="ui-right">

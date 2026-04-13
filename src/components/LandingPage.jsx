@@ -275,8 +275,8 @@ function AppMockup() {
         </div>
         {/* Enhanced scoring row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px 8px", background: "#0d0d0f" }}>
-          <span style={{ color: "#c299ff", fontSize: 12, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>COMBO x3</span>
-          <span style={{ color: "#7ec8a4", fontSize: 12, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>2x</span>
+          <span style={{ color: "#c299ff", fontSize: 14, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>COMBO x3</span>
+          <span style={{ color: "#7ec8a4", fontSize: 14, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>2x</span>
           <span style={{ color: "#e8e8f0", fontSize: 14, fontWeight: "bold", fontFamily: "'SF Pro Display','Helvetica Neue',sans-serif" }}>SCORE: 840</span>
         </div>
         {/* Live canvas */}
@@ -311,7 +311,7 @@ function FeatureCard({ icon, title, desc, tag }) {
 }
 
 // ── Main landing page ─────────────────────────────────────────────────────────
-export default function TrayPongLanding({ onStartGame }) {
+export default function TrayPongLanding({ onStartGame, onScoreSaved }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -545,7 +545,7 @@ export default function TrayPongLanding({ onStartGame }) {
       {/* ── Features ── */}
       <section id="features" style={{ paddingTop: "80px", padding: "80px clamp(24px, 5vw, 48px) clamp(80px, 10vh, 100px)", maxWidth: 1100, margin: "0 auto" }}>
         <Reveal>
-          <p style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9966ff", marginBottom: 16 }}>What's inside</p>
+          <p style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "#9966ff", marginBottom: 16 }}><span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", color: "#f0f0fa" }}>TRAYPONG</span></p>
         </Reveal>
         <Reveal delay={0.05}>
           <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(32px, 6vw, 56px)", fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", marginBottom: "clamp(40px, 6vw, 64px)" }}>
