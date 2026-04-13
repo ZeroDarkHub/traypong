@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { FaRegCopy } from 'react-icons/fa';
+import { FaRegCopy, FaGamepad, FaApple, FaBolt, FaChartLine } from 'react-icons/fa';
 
 const FEATURES = [
   {
-    icon: <FaRegCopy />,
+    icon: <FaGamepad />,
     title: "Classic Pong",
     desc: "Tight mouse controls, responsive AI, and realistic bounce angles based on where you hit the paddle. Edge hits = sharp angles.",
     tag: "Physics engine",
   },
   {
-    icon: "✨",
+    icon: <FaBolt />,
     title: "Ball trail & shake",
     desc: "Subtle motion trail follows the ball. Screen shakes on every paddle hit. Small details that make the game feel alive.",
     tag: "Game feel",
@@ -27,13 +27,13 @@ const FEATURES = [
     tag: "localStorage",
   },
   {
-    icon: "🍎",
+    icon: <FaApple />,
     title: "True tray app",
     desc: "No Dock icon. Lives only in your menu bar. Click to open, click away to close. Auto-pauses when you switch apps.",
     tag: "Electron",
   },
   {
-    icon: "⚡",
+    icon: <FaChartLine />,
     title: "Gradual difficulty",
     desc: "Ball speeds up with each hit. AI gets sharper as the game progresses. Every match is a little harder than the last.",
     tag: "Adaptive AI",
