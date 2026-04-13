@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { FaRegCopy } from 'react-icons/fa';
 
 const FEATURES = [
   {
-    icon: "🏓",
+    icon: <FaRegCopy />,
     title: "Classic Pong",
     desc: "Tight mouse controls, responsive AI, and realistic bounce angles based on where you hit the paddle. Edge hits = sharp angles.",
     tag: "Physics engine",
@@ -374,14 +375,9 @@ export default function TrayPongLanding({ onStartGame, onScoreSaved }) {
           >
             <span>xattr -r -d com.apple.quarantine /Applications/TrayPong.app</span>
             {copied ? (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: "#22c55e" }}>
-                <path d="M13.5 4.5L6 12l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <FaRegCopy style={{ color: "#22c55e", fontSize: 16 }} />
             ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: "rgba(255, 215, 0, 0.7)" }}>
-                <path d="M5 3.5v-1a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5h-1v1a.5.5 0 0 0 .5.5h1a1.5 1.5 0 0 0 1.5-1.5v-10a1.5 1.5 0 0 0-1.5-1.5h-8a1.5 1.5 0 0 0-1.5 1.5v1z" stroke="currentColor" strokeWidth="1" fill="currentColor"/>
-                <path d="M2.5 3h11a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5z" stroke="currentColor" strokeWidth="1" fill="none"/>
-              </svg>
+              <FaRegCopy style={{ color: "rgba(255, 215, 0, 0.7)", fontSize: 16 }} />
             )}
           </div>
           <strong>For macOS Sonoma and earlier:</strong> The right-click method above should work fine.
