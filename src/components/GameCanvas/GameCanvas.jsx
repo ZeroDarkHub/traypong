@@ -120,13 +120,13 @@ function drawOverlay(ctx, text, subtext) {
 
   ctx.textAlign = 'center';
   ctx.fillStyle = COLORS.scoreText;
-  ctx.font = 'bold 16px "SF Pro Display", "Helvetica Neue", sans-serif';
-  ctx.fillText(text, CANVAS_W / 2, CANVAS_H / 2 - 12);
+  ctx.font = 'bold 12px "SF Pro Display", "Helvetica Neue", sans-serif';
+  ctx.fillText(text, CANVAS_W / 2, CANVAS_H / 2 - 30);
 
   if (subtext) {
     ctx.fillStyle = COLORS.dimText;
-    ctx.font = '12px "SF Pro Display", "Helvetica Neue", sans-serif';
-    ctx.fillText(subtext, CANVAS_W / 2, CANVAS_H / 2 + 14);
+    ctx.font = '10px "SF Pro Display", "Helvetica Neue", sans-serif';
+    ctx.fillText(subtext, CANVAS_W / 2, CANVAS_H / 2 + 8);
   }
 }
 
@@ -192,7 +192,7 @@ export default function GameCanvas({ onGameOver }) {
       if (winner === 'ai') {
         if (isEnteringName) {
           // Show name input screen
-          drawOverlay(ctx, `Game Over - ${finalScore} pts (${roundsWon} rounds)`, 'Enter your name:');
+          drawOverlay(ctx, `Game Over - ${finalScore} pts (${roundsWon} rounds)`);
         } else {
           // Show final score and high scores
           const highScoreText = highScores.length > 0 
@@ -355,7 +355,7 @@ export default function GameCanvas({ onGameOver }) {
       {renderState.gameState === GAME_STATE.GAME_OVER && renderState.winner === 'ai' && renderState.isEnteringName && (
         <div style={{
           position: 'absolute',
-          top: '65%',
+          top: '55%',
           left: '50%',
           transform: 'translateX(-50%)',
           background: 'rgba(13, 13, 15, 0.9)',
